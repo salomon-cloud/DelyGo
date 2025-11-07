@@ -1,0 +1,14 @@
+/* Minimal CSS fallback (Tailwind removed). Replace with your own styles. */
+body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background: #f8fafc; color:#111827; }
+.container { max-width: 960px; margin: 0 auto; padding: 1rem; }
+.bg-white { background: #fff; }
+.p-4 { padding: 1rem; }
+.rounded { border-radius: 0.25rem; }
+.shadow { box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.text-2xl { font-size: 1.5rem; }
+.text-3xl { font-size: 1.875rem; }
+.font-bold { font-weight: 700; }
+.mt-4 { margin-top: 1rem; }
+.mt-2 { margin-top: 0.5rem; }
+.text-sm { font-size: 0.875rem; }
+.text-gray-600 { color: #4b5563; }
