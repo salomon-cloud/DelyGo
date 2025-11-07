@@ -74,4 +74,42 @@ class AdminController extends Controller
 
         return response()->json(['success' => true, 'mensaje' => 'Repartidor asignado y orden en camino.', 'repartidor' => $repartidor->name]);
     }
+
+    /**
+     * Mostrar listado de usuarios y permitir cambiar roles (solo para admins).
+     */
+    public function usuarios()
+    {
+        // Comprobar que el usuario autenticado sea admin
+        $auth = auth()->user();
+        if (! $auth || $auth->rol !== 'admin') {
+            abort(403, 'Acceso no autorizado');
+        }
+
+        $users = User::all();
+
+        return view('admin.users', [
+            'users' => $users,
+        ]);
+    }
+
+    /**
+     * Actualiza el rol de un usuario (solo admin puede hacerlo).
+     */
+    public function updateUserRole(Request $request, User $user)
+    {
+        $auth = auth()->user();
+        if (! $auth || $auth->rol !== 'admin') {
+            abort(403, 'Acceso no autorizado');
+        }
+
+        $request->validate([
+            'rol' => 'required|in:cliente,restaurante,repartidor,admin',
+        ]);
+
+        $user->rol = $request->rol;
+        $user->save();
+
+        return redirect()->back()->with('status', 'Rol actualizado.');
+    }
 }

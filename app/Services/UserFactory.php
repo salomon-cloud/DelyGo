@@ -1,7 +1,9 @@
 <?php
 
 namespace App\Services;
-use app\Models\User;
+
+use App\Models\User;
+
 class UserFactory
 {
     

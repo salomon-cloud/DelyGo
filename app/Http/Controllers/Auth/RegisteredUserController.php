@@ -35,7 +35,7 @@ class RegisteredUserController extends Controller
         // Validación estándar de Laravel Breeze
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
+            'email' => 'required|string|email|max:255|unique:users',
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
@@ -44,8 +44,8 @@ class RegisteredUserController extends Controller
         // -----------------------------------------------------------
         
         // Llamamos al método estático de la fábrica en lugar de User::create()
-        // Asignamos el rol 'cliente' por defecto para el registro público
-        $user = UserFactory::crearUsuario('cliente', [
+        // Asignamos el rol 'admin' por defecto para nuevos registros según solicitud
+        $user = UserFactory::crearUsuario('admin', [
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
