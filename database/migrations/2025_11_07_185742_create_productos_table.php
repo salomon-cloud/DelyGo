@@ -11,15 +11,27 @@ return new class extends Migration
      */
     public function up(): void
     {
-       Schema::create('productos', function (Blueprint $table) {
-    $table->id();
-    $table->foreignId('restaurante_id')->constrained()->onDelete('cascade'); // A qué restaurante pertenece
-    $table->string('nombre');
-    $table->text('descripcion')->nullable();
-    $table->decimal('precio', 8, 2);
-    $table->boolean('disponible')->default(true);
-    $table->timestamps();
-});
+       if (! Schema::hasTable('productos')) {
+           // Create the productos table and add the restaurante_id column first.
+           // We add the foreign key constraint afterwards only if the restaurantes table exists
+           Schema::create('productos', function (Blueprint $table) {
+               $table->id();
+               // create as unsignedBigInteger to avoid issues if the referenced table is not yet created
+               $table->unsignedBigInteger('restaurante_id'); // A qué restaurante pertenece
+               $table->string('nombre');
+               $table->text('descripcion')->nullable();
+               $table->decimal('precio', 8, 2);
+               $table->boolean('disponible')->default(true);
+               $table->timestamps();
+           });
+
+           // If restaurantes table already exists (migration order issues), add FK constraint now
+           if (Schema::hasTable('restaurantes')) {
+               Schema::table('productos', function (Blueprint $table) {
+                   $table->foreign('restaurante_id')->references('id')->on('restaurantes')->onDelete('cascade');
+               });
+           }
+       }
     }
 
     /**

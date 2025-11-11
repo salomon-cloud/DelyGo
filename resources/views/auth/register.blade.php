@@ -6,6 +6,19 @@
 
     <form method="POST" action="{{ route('register') }}" class="mt-6">
         @csrf
+        @if ($errors->any())
+            <div class="mb-4 text-red-600">
+                <strong>Se encontraron errores:</strong>
+                <ul>
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+        @if (session('status'))
+            <div class="mb-4 text-green-600">{{ session('status') }}</div>
+        @endif
         <div>
             <label for="name">Nombre</label>
             <input id="name" type="text" name="name" value="{{ old('name') }}" required autofocus />

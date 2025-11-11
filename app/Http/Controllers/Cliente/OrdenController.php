@@ -134,11 +134,11 @@ class OrdenController extends Controller
             // 2. 🎯 Llama al método que usa el Patrón State
             $orden->transicionarA($request->nuevo_estado);
 
-            return response()->json(['success' => true, 'estado' => $orden->estado, 'mensaje' => 'Estado cambiado.']);
+            return response()->json(['success' => true, 'estado' => $orden->estado, 'message' => 'Estado cambiado.']);
             
         } catch (\InvalidArgumentException $e) {
             // 3. Si el Patrón State prohíbe la transición, devuelve error 400
-            return response()->json(['error' => $e->getMessage()], 400);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
         }
     }
 }

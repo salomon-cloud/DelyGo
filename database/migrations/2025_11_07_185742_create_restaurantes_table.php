@@ -11,15 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        
-      Schema::create('restaurantes', function (Blueprint $table) {
-    $table->id();
-    $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); // Relación con el usuario 'restaurante'
-    $table->string('nombre');
-    $table->text('descripcion')->nullable();
-    $table->string('direccion');
-    $table->timestamps();
-});
+        if (! Schema::hasTable('restaurantes')) {
+            Schema::create('restaurantes', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); // Relación con el usuario 'restaurante'
+                $table->string('nombre');
+                $table->text('descripcion')->nullable();
+                $table->string('direccion');
+                $table->timestamps();
+            });
+        }
     }
 
     /**
