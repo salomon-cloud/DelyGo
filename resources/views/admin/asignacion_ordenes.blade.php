@@ -125,6 +125,13 @@
                 </div>
             </div>
 
+            <div class="mt-3">
+                <label class="inline-flex items-center">
+                    <input id="modal-asignar-ahora" type="checkbox" class="mr-2" />
+                    <span class="text-sm">Asignar repartidor ahora (si está marcado, la orden se crea y se asigna inmediatamente)</span>
+                </label>
+            </div>
+
             <div class="mt-4 flex justify-end gap-2">
                 <button id="modal-assign-btn" class="bg-blue-600 text-white px-4 py-2 rounded">Confirmar asignación</button>
                 <button id="modal-cancel-btn" class="bg-gray-200 px-4 py-2 rounded">Cancelar</button>
@@ -226,8 +233,10 @@
             const total = document.getElementById('modal-total').value || null;
             const productosText = document.getElementById('modal-productos').value || null;
 
-            if(!repartidorId){ showToast('Seleccione un repartidor', 'error'); return; }
+            const asignarAhora = document.getElementById('modal-asignar-ahora').checked;
+
             if(!restauranteId){ showToast('Seleccione un restaurante', 'error'); return; }
+            if(asignarAhora && !repartidorId){ showToast('Seleccione un repartidor para asignar ahora', 'error'); return; }
             if(!direccion){ showToast('Ingrese la dirección de entrega', 'error'); return; }
 
             fetch('/admin/ordenes/crear-asignar', {
@@ -237,10 +246,10 @@
                     'Content-Type':'application/json',
                     'X-CSRF-TOKEN': csrf
                 },
-                body: JSON.stringify({ repartidor_id: repartidorId, restaurante_id: restauranteId, direccion_entrega: direccion, total: total, productos: productosText })
+                body: JSON.stringify({ repartidor_id: repartidorId, restaurante_id: restauranteId, direccion_entrega: direccion, total: total, productos: productosText, asignar_ahora: asignarAhora })
             }).then(r => r.json()).then(data => {
                 if(data.success){
-                    showToast(data.message || 'Orden creada y repartidor asignado', 'success');
+                    showToast(data.message || 'Orden creada', 'success');
                     closeModal();
                     // Optionally add a new row to the table if desired
                 } else {

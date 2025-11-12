@@ -192,33 +192,43 @@ class AdminController extends Controller
             'productos' => 'nullable|string',
         ]);
 
-        // Validar que repartidor tenga rol correcto
-        $repartidor = User::where('id', $data['repartidor_id'])->where('rol', 'repartidor')->first();
-        if (! $repartidor) {
-            return response()->json(['success' => false, 'message' => 'Repartidor inválido'], 400);
+        $asignarAhora = $data['asignar_ahora'] ?? false;
+
+        // Si piden asignar ahora, validar repartidor
+        $repartidor = null;
+        if ($asignarAhora) {
+            $repartidor = User::where('id', $data['repartidor_id'] ?? 0)->where('rol', 'repartidor')->first();
+            if (! $repartidor) {
+                return response()->json(['success' => false, 'message' => 'Repartidor inválido para asignar ahora'], 400);
+            }
         }
 
-    // Crear orden mínima
-    $orden = new Orden();
-    $orden->restaurante_id = $data['restaurante_id'];
-    $orden->direccion_entrega = $data['direccion_entrega'];
-    $orden->total = $data['total'] ?? 0;
-    $orden->estado = 'preparando';
-    // Si la tabla exige cliente_id NOT NULL, asignamos el admin como cliente creador
-    $orden->cliente_id = $auth->id;
-    $orden->save();
+        // Crear orden mínima
+        $orden = new Orden();
+        $orden->restaurante_id = $data['restaurante_id'];
+        $orden->direccion_entrega = $data['direccion_entrega'];
+        $orden->total = $data['total'] ?? 0;
+        $orden->estado = 'preparando';
+        // Si la tabla exige cliente_id NOT NULL, asignamos el admin como cliente creador
+        $orden->cliente_id = $auth->id;
+        $orden->save();
 
-        // Asignar repartidor
-        $orden->repartidor_id = $repartidor->id;
-        try {
-            $orden->transicionarA('en_camino');
-        } catch (\InvalidArgumentException $e) {
-            // guardamos repartidor y devolvemos advertencia
-            $orden->save();
-            return response()->json(['success' => true, 'message' => 'Orden creada y repartidor asignado, pero no pudo pasar automáticamente a "en_camino".', 'orden_id' => $orden->id, 'repartidor_name' => $repartidor->name]);
+        // Si piden asignar ahora, asignar y tratar de transicionar
+        if ($asignarAhora && $repartidor) {
+            $orden->repartidor_id = $repartidor->id;
+            try {
+                $orden->transicionarA('en_camino');
+            } catch (\InvalidArgumentException $e) {
+                // guardamos repartidor y devolvemos advertencia
+                $orden->save();
+                return response()->json(['success' => true, 'message' => 'Orden creada y repartidor asignado, pero no pudo pasar automáticamente a "en_camino".', 'orden_id' => $orden->id, 'orden' => $orden->toArray(), 'repartidor_name' => $repartidor->name]);
+            }
+
+            return response()->json(['success' => true, 'message' => 'Orden creada y repartidor asignado.', 'orden_id' => $orden->id, 'orden' => $orden->toArray(), 'repartidor_name' => $repartidor->name, 'estado' => 'en_camino']);
         }
 
-    return response()->json(['success' => true, 'message' => 'Orden creada y repartidor asignado.', 'orden_id' => $orden->id, 'orden' => $orden->toArray(), 'repartidor_name' => $repartidor->name, 'estado' => 'en_camino']);
+        // Si no se asignó ahora, devolvemos la orden creada (sin repartidor)
+        return response()->json(['success' => true, 'message' => 'Orden creada (sin asignar).', 'orden_id' => $orden->id, 'orden' => $orden->toArray()]);
     }
 
     /**
