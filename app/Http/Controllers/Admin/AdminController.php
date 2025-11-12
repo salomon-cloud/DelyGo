@@ -26,14 +26,20 @@ class AdminController extends Controller
         $repartidores = User::where('rol', 'repartidor')->get(['id', 'name', 'email']);
         $sample_repartidores = User::where('rol', 'repartidor')->limit(3)->get(['id', 'name', 'email']);
 
-        // 3. Restaurantes sample (limitar a 3 para la inyección demo)
-        $sample_restaurantes = Restaurante::limit(3)->get(['id', 'nombre']);
+    // 3. Restaurantes sample (limitar a 3 para la inyección demo)
+    $sample_restaurantes = Restaurante::limit(3)->get(['id', 'nombre']);
+
+    // 4. Productos disponibles (para el modal de creación/selección)
+    // Algunos registros pueden tener valores distintos a 1 (por ejemplo 99 en tu BD de pruebas),
+    // así que consideramos cualquier valor distinto de 0 como "disponible".
+    $productos = \App\Models\Producto::where('disponible', '<>', 0)->get(['id', 'nombre', 'precio', 'restaurante_id']);
 
         return view('admin.asignacion_ordenes', [
             'ordenes' => $ordenes,
             'repartidores' => $repartidores,
             'sample_repartidores' => $sample_repartidores,
             'sample_restaurantes' => $sample_restaurantes,
+            'productos' => $productos,
         ]);
     }
     
@@ -187,7 +193,10 @@ class AdminController extends Controller
             'restaurante_id' => 'required|exists:restaurantes,id',
             'direccion_entrega' => 'required|string|max:500',
             'total' => 'nullable|numeric',
-            'productos' => 'nullable|string',
+            'productos' => 'nullable|array',
+            // productos expected shape: [{id: integer, cantidad: integer}, ...]
+            'productos.*.id' => 'required_with:productos|integer|exists:productos,id',
+            'productos.*.cantidad' => 'required_with:productos|integer|min:1',
         ]);
 
         $asignarAhora = $data['asignar_ahora'] ?? false;
@@ -211,6 +220,24 @@ class AdminController extends Controller
         $orden->cliente_id = $auth->id;
         $orden->save();
 
+        // Si se pasaron productos, adjuntarlos al pivot orden_producto con la cantidad indicada y precio unitario actual
+        if (!empty($data['productos']) && is_array($data['productos'])) {
+            $attach = [];
+            foreach ($data['productos'] as $item) {
+                // cada item debe tener id y cantidad
+                $pid = $item['id'] ?? null;
+                $cantidad = intval($item['cantidad'] ?? 1);
+                if (!$pid) continue;
+                $prod = \App\Models\Producto::find($pid);
+                $attach[$pid] = [
+                    'cantidad' => $cantidad,
+                    'precio_unitario' => $prod ? $prod->precio : 0,
+                ];
+            }
+            if (!empty($attach)) {
+                $orden->productos()->attach($attach);
+            }
+        }
         // Si piden asignar ahora, asignar y tratar de transicionar
         if ($asignarAhora && $repartidor) {
             $orden->repartidor_id = $repartidor->id;

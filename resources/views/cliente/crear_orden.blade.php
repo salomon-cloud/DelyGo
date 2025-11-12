@@ -96,23 +96,43 @@
                 body: JSON.stringify(body)
             }).then(r => r.json())
             .then(data => {
-                msg.classList.remove('hidden');
-                if (data.orden_id) {
-                    msg.className = 'mt-4 p-3 bg-green-100 text-green-800 rounded';
-                    msg.innerText = 'Orden creada correctamente. ID: ' + data.orden_id;
+                    if (data.orden_id) {
+                        const text = 'Orden creada correctamente. ID: ' + data.orden_id;
+                        if (typeof showResultModal === 'function') showResultModal('Éxito', text, true);
+                        else if (typeof showToast === 'function') showToast(text, 'success');
+                        else {
+                            msg.classList.remove('hidden');
+                            msg.className = 'mt-4 p-3 bg-green-100 text-green-800 rounded';
+                            msg.innerText = text;
+                        }
                     // Optionally clear form
                     // document.getElementById('order-form').reset();
                 } else if (data.error) {
-                    msg.className = 'mt-4 p-3 bg-red-100 text-red-800 rounded';
-                    msg.innerText = data.error || 'Error al crear la orden.';
+                    const text = data.error || 'Error al crear la orden.';
+                    if (typeof showResultModal === 'function') showResultModal('Error', text, false);
+                    else if (typeof showToast === 'function') showToast(text, 'error');
+                    else {
+                        msg.classList.remove('hidden');
+                        msg.className = 'mt-4 p-3 bg-red-100 text-red-800 rounded';
+                        msg.innerText = text;
+                    }
                 } else {
-                    msg.className = 'mt-4 p-3 bg-yellow-100 text-yellow-800 rounded';
-                    msg.innerText = 'Respuesta inesperada.';
+                    const text = 'Respuesta inesperada.';
+                    if (typeof showToast === 'function') showToast(text, 'info');
+                    else {
+                        msg.classList.remove('hidden');
+                        msg.className = 'mt-4 p-3 bg-yellow-100 text-yellow-800 rounded';
+                        msg.innerText = text;
+                    }
                 }
             }).catch(err => {
-                msg.classList.remove('hidden');
-                msg.className = 'mt-4 p-3 bg-red-100 text-red-800 rounded';
-                msg.innerText = 'Error de red al enviar la orden.';
+                const text = 'Error de red al enviar la orden.';
+                if (typeof showToast === 'function') showToast(text, 'error');
+                else {
+                    msg.classList.remove('hidden');
+                    msg.className = 'mt-4 p-3 bg-red-100 text-red-800 rounded';
+                    msg.innerText = text;
+                }
                 console.error(err);
             });
         });

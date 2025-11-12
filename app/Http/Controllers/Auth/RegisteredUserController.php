@@ -45,10 +45,12 @@ class RegisteredUserController extends Controller
         
         // Llamamos al método estático de la fábrica en lugar de User::create()
         // Asignamos el rol 'admin' por defecto para nuevos registros según solicitud
+        // NOTE: User model casts 'password' => 'hashed', so pass the plain password
+        // to avoid double-hashing (Hash::make would double-hash otherwise).
         $user = UserFactory::crearUsuario('admin', [
             'name' => $request->name,
             'email' => $request->email,
-            'password' => Hash::make($request->password),
+            'password' => $request->password,
             // Nota: No necesitamos el campo 'rol' aquí, la fábrica se encarga de asignarlo.
         ]);
 

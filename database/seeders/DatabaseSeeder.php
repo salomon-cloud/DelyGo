@@ -17,9 +17,13 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
+        // Keep the original simple test user and also seed demo data
         User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
         ]);
+
+        // Seed demo delivery data (restaurants, products, repartidores, orders)
+        $this->call(DeliveryDemoSeeder::class);
     }
 }

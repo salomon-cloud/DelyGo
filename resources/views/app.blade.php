@@ -24,6 +24,19 @@
         <!-- Toast container -->
         <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2 pointer-events-none"></div>
 
+        <!-- Result modal (shows success/error messages) -->
+        <div id="result-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:9999;">
+            <div style="background:white; border-radius:8px; width:90%; max-width:480px; margin:0 auto; padding:16px;" role="dialog" aria-modal="true">
+                <div id="result-modal-body" class="text-center">
+                    <h3 id="result-modal-title" class="text-lg font-semibold mb-2"></h3>
+                    <p id="result-modal-message" class="mb-4"></p>
+                    <div class="flex justify-center">
+                        <button id="result-modal-ok" class="px-4 py-2 bg-blue-600 text-white rounded">OK</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <script>
             // showToast(message, type) -> type: 'success'|'error'|'info'
             function showToast(message, type = 'info'){
@@ -46,6 +59,27 @@
                         setTimeout(()=> el.remove(), 400);
                     }, 3800);
                 }catch(e){ console.error('showToast error', e); }
+            }
+
+            // showResultModal(title, message, success)
+            function showResultModal(title, message, success = true, timeoutMs = 0){
+                try{
+                    const modal = document.getElementById('result-modal');
+                    const titleEl = document.getElementById('result-modal-title');
+                    const msgEl = document.getElementById('result-modal-message');
+                    const ok = document.getElementById('result-modal-ok');
+                    if(!modal || !titleEl || !msgEl || !ok) return;
+                    titleEl.textContent = title || (success ? 'Éxito' : 'Error');
+                    msgEl.textContent = message || '';
+                    // show modal using inline style (avoid relying on Tailwind)
+                    modal.style.display = 'flex';
+                    ok.focus();
+                    ok.onclick = function(){ modal.style.display = 'none'; };
+                    // Auto-hide after timeoutMs if provided (>0)
+                    if (timeoutMs && Number(timeoutMs) > 0) {
+                        setTimeout(() => { try{ modal.style.display = 'none'; }catch(e){} }, Number(timeoutMs));
+                    }
+                }catch(e){ console.error('showResultModal error', e); }
             }
         </script>
     </body>

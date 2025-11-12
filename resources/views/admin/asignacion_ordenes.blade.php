@@ -5,7 +5,7 @@
     <h1 class="text-2xl font-bold">Asignación de órdenes</h1>
 
     <div class="mt-4">
-        <button id="open-assign-modal" class="px-4 py-2 rounded text-white" style="background-color:#2563eb;color:#ffffff;">Asignar una orden</button>
+        <button type="button" id="open-assign-modal" class="px-4 py-2 rounded text-white" style="background-color:#2563eb;color:#ffffff;">Asignar una orden</button>
     </div>
 
     @if($ordenes->isEmpty())
@@ -47,26 +47,21 @@
                     <td class="p-2 border" id="orden-repartidor-{{ $orden->id }}">{{ optional($orden->repartidor)->name ?? '---' }}</td>
                     <td class="p-2 border">
                         <div class="flex flex-col gap-2">
-                            <div class="flex gap-2">
-                                <select class="repartidor-select p-1 border" data-orden-id="{{ $orden->id }}">
-                                    <option value="">-- Seleccionar --</option>
-                                    @foreach($repartidores as $r)
-                                        <option value="{{ $r->id }}">{{ $r->name }} ({{ $r->email }})</option>
-                                    @endforeach
-                                </select>
-                                <button class="assign-btn bg-blue-600 text-white px-2 py-1 rounded" data-orden-id="{{ $orden->id }}">Asignar</button>
-                            </div>
+                            {{-- Asignación removida de la columna de Acciones; solo queda cambio de estado --}}
 
                             <div class="flex gap-2 items-center">
-                                <select class="estado-select p-1 border" data-orden-id="{{ $orden->id }}">
-                                    @php
-                                        $estados = ['preparando','en_camino','entregada','cancelada'];
-                                    @endphp
-                                    @foreach($estados as $e)
-                                        <option value="{{ $e }}" {{ $orden->estado === $e ? 'selected' : '' }}>{{ $e }}</option>
-                                    @endforeach
-                                </select>
-                                <button class="change-estado-btn bg-green-600 text-white px-2 py-1 rounded" data-orden-id="{{ $orden->id }}">Cambiar estado</button>
+                                <form method="POST" action="{{ url('/admin/ordenes/'.$orden->id.'/estado') }}" class="estado-form">
+                                    @csrf
+                                    <select name="nuevo_estado" class="estado-select p-1 border" data-orden-id="{{ $orden->id }}">
+                                        @php
+                                            $estados = ['preparando','en_camino','entregada','cancelada'];
+                                        @endphp
+                                        @foreach($estados as $e)
+                                            <option value="{{ $e }}" {{ $orden->estado === $e ? 'selected' : '' }}>{{ $e }}</option>
+                                        @endforeach
+                                    </select>
+                                    <button type="submit" class="change-estado-btn bg-green-600 text-white px-2 py-1 rounded" data-orden-id="{{ $orden->id }}">Cambiar estado</button>
+                                </form>
                             </div>
                         </div>
                     </td>
@@ -84,7 +79,7 @@
     <div class="bg-white rounded-lg w-11/12 md:w-2/3 p-4">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-semibold">Asignar una orden</h3>
-            <button id="close-assign-modal" class="text-gray-500">Cerrar</button>
+            <button type="button" id="close-assign-modal" class="text-gray-500">Cerrar</button>
         </div>
 
         <div id="assign-modal-body">
@@ -99,8 +94,22 @@
             </div>
 
             <div class="mb-2">
-                <label class="block text-sm font-medium">Productos (lista breve)</label>
-                <textarea id="modal-productos" class="w-full p-2 border" rows="3" placeholder="Ej: Pizza x2, Ensalada x1"></textarea>
+                <label class="block text-sm font-medium">Productos (seleccione uno o varios)</label>
+                <div class="flex gap-2">
+                    <select id="modal-productos" name="productos[]" class="w-2/3 p-2 border" multiple size="6">
+                        @foreach($productos as $p)
+                            <option value="{{ $p->id }}" data-restaurante-id="{{ $p->restaurante_id }}" data-precio="{{ $p->precio }}">{{ $p->nombre }} — ${{ number_format($p->precio,2) }}</option>
+                        @endforeach
+                    </select>
+                    <div class="w-1/3">
+                        <button type="button" id="modal-add-product-btn" class="mb-2 px-3 py-1 bg-indigo-600 text-white rounded">Agregar</button>
+                        <div id="modal-productos-added" class="p-2 border rounded" style="max-height:220px; overflow:auto;">
+                            <!-- Items agregados aparecerán aquí -->
+                            <p id="modal-no-products" class="text-sm text-gray-500">No hay productos agregados.</p>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Selecciona productos y pulsa <strong>Agregar</strong>. Luego ajusta cantidad si es necesario.</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -132,9 +141,9 @@
                 </label>
             </div>
 
-            <div class="mt-4 flex justify-end gap-2">
-                <button id="modal-assign-btn" class="bg-blue-600 text-white px-4 py-2 rounded">Confirmar asignación</button>
-                <button id="modal-cancel-btn" class="bg-gray-200 px-4 py-2 rounded">Cancelar</button>
+                <div class="mt-4 flex justify-end gap-2">
+                <button type="button" id="modal-assign-btn" class="bg-blue-600 text-white px-4 py-2 rounded">Confirmar asignación</button>
+                <button type="button" id="modal-cancel-btn" class="bg-gray-200 px-4 py-2 rounded">Cancelar</button>
             </div>
         </div>
     </div>
@@ -142,6 +151,7 @@
 
 <script>
     (function(){
+        console.log('[admin/asignacion_ordenes] script loaded');
         const csrfMeta = document.querySelector('meta[name="csrf-token"]');
         const csrf = csrfMeta ? csrfMeta.getAttribute('content') : '';
 
@@ -157,49 +167,105 @@
             }).then(r => r.json());
         }
 
-        // Assign button
-        document.querySelectorAll('.assign-btn').forEach(btn => {
-            btn.addEventListener('click', function(){
-                const ordenId = this.dataset.ordenId;
-                const select = document.querySelector('.repartidor-select[data-orden-id="'+ordenId+'"]');
-                const repartidorId = select.value;
-                if(!repartidorId){
-                    showToast('Seleccione un repartidor.', 'error');
-                    return;
-                }
-                this.disabled = true;
-                jsonPost('/admin/ordenes/'+ordenId+'/asignar', { repartidor_id: repartidorId })
-                    .then(data => {
-                        this.disabled = false;
-                            if(data.success){
-                                document.getElementById('orden-repartidor-'+ordenId).innerText = data.repartidor_name || 'Asignado';
-                                if(data.estado){ document.getElementById('orden-estado-'+ordenId).innerText = data.estado; }
-                                showToast('Repartidor asignado correctamente.', 'success');
-                            } else {
-                                showToast(data.message || 'Error al asignar.', 'error');
-                            }
-                    }).catch(err => { this.disabled = false; showToast('Error de red', 'error'); console.error(err); });
+        // Intercept form submissions (progressive enhancement): handle POST via AJAX and show modal/toast
+        document.querySelectorAll('form.inline-form').forEach(form => {
+            form.addEventListener('submit', function(e){
+                e.preventDefault();
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const ordenId = submitBtn ? submitBtn.dataset.ordenId : null;
+                const formData = new FormData(form);
+                const payload = {};
+                formData.forEach((v,k) => payload[k] = v);
+                if(submitBtn) submitBtn.disabled = true;
+                fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrf
+                    },
+                    body: JSON.stringify(payload)
+                }).then(r => r.json()).then(data => {
+                    if(submitBtn) submitBtn.disabled = false;
+                    if(data.success){
+                        if(data.repartidor_name && ordenId){ document.getElementById('orden-repartidor-'+ordenId).innerText = data.repartidor_name; }
+                        if(data.estado && ordenId){ document.getElementById('orden-estado-'+ordenId).innerText = data.estado; }
+                        (typeof showToast === 'function' ? showToast(data.message || 'Operación exitosa', 'success') : alert(data.message || 'Operación exitosa'));
+                        if(typeof showResultModal === 'function') showResultModal('Éxito', data.message || 'Operación exitosa', true, 2000);
+                    } else {
+                        (typeof showToast === 'function' ? showToast(data.message || 'Error', 'error') : alert(data.message || 'Error'));
+                        if(typeof showResultModal === 'function') showResultModal('Error', data.message || 'Error', false, 2000);
+                    }
+                }).catch(err => {
+                    if(submitBtn) submitBtn.disabled = false;
+                    (typeof showToast === 'function' ? showToast('Error de red', 'error') : alert('Error de red'));
+                    if(typeof showResultModal === 'function') showResultModal('Error', 'Error de red', false, 2000);
+                    console.error(err);
+                });
             });
         });
 
+        document.querySelectorAll('form.estado-form').forEach(form => {
+            form.addEventListener('submit', function(e){
+                e.preventDefault();
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const ordenId = submitBtn ? submitBtn.dataset.ordenId : null;
+                const formData = new FormData(form);
+                const payload = {};
+                formData.forEach((v,k) => payload[k] = v);
+                if(submitBtn) submitBtn.disabled = true;
+                fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrf
+                    },
+                    body: JSON.stringify(payload)
+                }).then(r => r.json()).then(data => {
+                    if(submitBtn) submitBtn.disabled = false;
+                    if(data.success){
+                        if(payload['nuevo_estado'] && ordenId){ document.getElementById('orden-estado-'+ordenId).innerText = payload['nuevo_estado']; }
+                        (typeof showToast === 'function' ? showToast(data.message || 'Estado actualizado', 'success') : alert(data.message || 'Estado actualizado'));
+                        if(typeof showResultModal === 'function') showResultModal('Éxito', data.message || 'Estado actualizado', true, 2000);
+                    } else {
+                        (typeof showToast === 'function' ? showToast(data.message || 'Error', 'error') : alert(data.message || 'Error'));
+                        if(typeof showResultModal === 'function') showResultModal('Error', data.message || 'Error', false, 2000);
+                    }
+                }).catch(err => {
+                    if(submitBtn) submitBtn.disabled = false;
+                    (typeof showToast === 'function' ? showToast('Error de red', 'error') : alert('Error de red'));
+                    if(typeof showResultModal === 'function') showResultModal('Error', 'Error de red', false, 2000);
+                    console.error(err);
+                });
+            });
+        });
+
+    // Remove old assign-btn handlers (no-op now since assign UI was removed). Kept intentionally empty.
+
         // Change estado button
         document.querySelectorAll('.change-estado-btn').forEach(btn => {
-            btn.addEventListener('click', function(){
+            btn.addEventListener('click', function(e){
+                e.preventDefault();
                 const ordenId = this.dataset.ordenId;
                 const select = document.querySelector('.estado-select[data-orden-id="'+ordenId+'"]');
                 const nuevoEstado = select.value;
                 if(!nuevoEstado){ showToast('Seleccione un estado', 'error'); return; }
                 this.disabled = true;
+                console.log('POST', '/admin/ordenes/'+ordenId+'/estado', { nuevo_estado: nuevoEstado });
                 jsonPost('/admin/ordenes/'+ordenId+'/estado', { nuevo_estado: nuevoEstado })
                     .then(data => {
+                        console.log('change-estado response', data);
                         this.disabled = false;
                             if(data.success){
                                 document.getElementById('orden-estado-'+ordenId).innerText = nuevoEstado;
-                                showToast('Estado actualizado.', 'success');
+                                (typeof showToast === 'function' ? showToast('Estado actualizado.', 'success') : alert('Estado actualizado.'));
+                                if(typeof showResultModal === 'function') showResultModal('Éxito', data.message || 'Estado actualizado.', true, 2000);
                             } else {
-                                showToast(data.message || 'Error al cambiar estado.', 'error');
+                                (typeof showToast === 'function' ? showToast(data.message || 'Error al cambiar estado.', 'error') : alert(data.message || 'Error al cambiar estado.'));
+                                if(typeof showResultModal === 'function') showResultModal('Error', data.message || 'Error al cambiar estado.', false, 2000);
                             }
-                    }).catch(err => { this.disabled = false; showToast('Error de red', 'error'); console.error(err); });
+                    }).catch(err => { this.disabled = false; (typeof showToast === 'function' ? showToast('Error de red', 'error') : alert('Error de red')); if(typeof showResultModal === 'function') showResultModal('Error', 'Error de red', false, 2000); console.error(err); });
             });
         });
 
@@ -224,20 +290,86 @@
         closeBtn && closeBtn.addEventListener('click', function(){ closeModal(); });
         cancelBtn && cancelBtn.addEventListener('click', function(){ closeModal(); });
 
+        // Manage adding products to the temporary list inside the modal
+        const addProductBtn = document.getElementById('modal-add-product-btn');
+        const addedContainer = document.getElementById('modal-productos-added');
+        let addedProducts = []; // { id, name, precio, cantidad }
+
+        function renderAddedProducts(){
+            addedContainer.innerHTML = '';
+            if(addedProducts.length === 0){
+                const p = document.createElement('p'); p.id = 'modal-no-products'; p.className = 'text-sm text-gray-500'; p.innerText = 'No hay productos agregados.'; addedContainer.appendChild(p); return;
+            }
+            const ul = document.createElement('ul'); ul.className = 'space-y-2';
+            addedProducts.forEach((it, idx) => {
+                const li = document.createElement('li'); li.className = 'flex items-center justify-between gap-2';
+                li.innerHTML = `
+                    <div class="flex-1">
+                        <strong>${escapeHtml(it.name)}</strong>
+                        <div class="text-xs text-gray-600">$${Number(it.precio).toFixed(2)}</div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="number" min="1" value="${it.cantidad}" data-idx="${idx}" class="added-qty p-1 w-20 border" />
+                        <button type="button" data-idx="${idx}" class="remove-added-btn px-2 py-1 bg-red-600 text-white rounded">Eliminar</button>
+                    </div>
+                `;
+                ul.appendChild(li);
+            });
+            addedContainer.appendChild(ul);
+
+            // Attach listeners
+            addedContainer.querySelectorAll('.added-qty').forEach(input => {
+                input.addEventListener('change', function(){
+                    const idx = parseInt(this.dataset.idx);
+                    let v = parseInt(this.value) || 1; if(v < 1) v = 1; this.value = v; addedProducts[idx].cantidad = v;
+                });
+            });
+            addedContainer.querySelectorAll('.remove-added-btn').forEach(btn => {
+                btn.addEventListener('click', function(){
+                    const idx = parseInt(this.dataset.idx);
+                    addedProducts.splice(idx,1);
+                    renderAddedProducts();
+                });
+            });
+        }
+
+        function escapeHtml(unsafe) {
+            return (unsafe+'').replace(/[&<"'`=\/]/g, function (s) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','/':'\/'})[s]; });
+        }
+
+        addProductBtn && addProductBtn.addEventListener('click', function(){
+            const select = document.getElementById('modal-productos');
+            if(!select) return;
+            const opts = Array.from(select.selectedOptions);
+            if(opts.length === 0){ (typeof showToast === 'function' ? showToast('Seleccione al menos un producto para agregar', 'error') : alert('Seleccione al menos un producto para agregar')); return; }
+            opts.forEach(o => {
+                const id = parseInt(o.value);
+                // Prevent duplicates: if already added, increment cantidad by 1
+                const existing = addedProducts.find(x => x.id === id);
+                if(existing){ existing.cantidad = existing.cantidad + 1; return; }
+                const name = o.textContent.trim();
+                const precio = parseFloat(o.dataset.precio || 0);
+                addedProducts.push({ id: id, name: name, precio: precio, cantidad: 1 });
+            });
+            renderAddedProducts();
+        });
+
         // Note: the modal now accepts manual order input; only repartidores and restaurantes are fetched from DB
 
-        confirmBtn && confirmBtn.addEventListener('click', function(){
+    confirmBtn && confirmBtn.addEventListener('click', function(e){
+            e.preventDefault();
             const repartidorId = repartidorSelect.value;
             const restauranteId = restauranteSelect.value;
             const direccion = document.getElementById('modal-direccion').value.trim();
             const total = document.getElementById('modal-total').value || null;
-            const productosText = document.getElementById('modal-productos').value || null;
-
             const asignarAhora = document.getElementById('modal-asignar-ahora').checked;
 
-            if(!restauranteId){ showToast('Seleccione un restaurante', 'error'); return; }
-            if(asignarAhora && !repartidorId){ showToast('Seleccione un repartidor para asignar ahora', 'error'); return; }
-            if(!direccion){ showToast('Ingrese la dirección de entrega', 'error'); return; }
+            if(!restauranteId){ (typeof showToast === 'function' ? showToast('Seleccione un restaurante', 'error') : alert('Seleccione un restaurante')); return; }
+            if(asignarAhora && !repartidorId){ (typeof showToast === 'function' ? showToast('Seleccione un repartidor para asignar ahora', 'error') : alert('Seleccione un repartidor para asignar ahora')); return; }
+            if(!direccion){ (typeof showToast === 'function' ? showToast('Ingrese la dirección de entrega', 'error') : alert('Ingrese la dirección de entrega')); return; }
+
+            // Build productos payload from addedProducts
+            const productosPayload = addedProducts.map(p => ({ id: p.id, cantidad: parseInt(p.cantidad) || 1 }));
 
             fetch('/admin/ordenes/crear-asignar', {
                 method: 'POST',
@@ -246,18 +378,24 @@
                     'Content-Type':'application/json',
                     'X-CSRF-TOKEN': csrf
                 },
-                body: JSON.stringify({ repartidor_id: repartidorId, restaurante_id: restauranteId, direccion_entrega: direccion, total: total, productos: productosText, asignar_ahora: asignarAhora })
+                body: JSON.stringify({ repartidor_id: repartidorId, restaurante_id: restauranteId, direccion_entrega: direccion, total: total, productos: productosPayload, asignar_ahora: asignarAhora })
             }).then(r => r.json()).then(data => {
                 if(data.success){
                     showToast(data.message || 'Orden creada', 'success');
+                    if(typeof showResultModal === 'function') showResultModal('Éxito', data.message || 'Orden creada', true, 2000);
                     closeModal();
-                    // Optionally add a new row to the table if desired
+                    // reset addedProducts
+                    addedProducts = [];
+                    renderAddedProducts();
                 } else {
                     showToast(data.message || 'Error al crear y asignar', 'error');
+                    if(typeof showResultModal === 'function') showResultModal('Error', data.message || 'Error al crear y asignar', false, 2000);
                 }
-            }).catch(err => { showToast('Error de red', 'error'); console.error(err); });
+            }).catch(err => { (typeof showToast === 'function' ? showToast('Error de red', 'error') : alert('Error de red')); if(typeof showResultModal === 'function') showResultModal('Error', 'Error de red', false, 2000); console.error(err); });
         });
 
+    // Initial render (show "No hay productos agregados.")
+    renderAddedProducts();
     })();
 </script>
 @endsection

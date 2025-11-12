@@ -20,7 +20,7 @@
                         <option value="en_camino">en_camino</option>
                         <option value="entregado">entregado</option>
                     </select>
-                    <button onclick="changeEstado({{ $orden->id }})" class="px-3 py-1 bg-blue-600 text-white rounded">Cambiar</button>
+                    <button type="button" onclick="changeEstado({{ $orden->id }})" class="px-3 py-1 bg-blue-600 text-white rounded">Cambiar</button>
                 </div>
             </li>
         @endforeach
@@ -28,6 +28,15 @@
 
     <script>
         function showMsg(text, ok=true){
+            // Prefer global toast or modal if available
+            if(typeof showResultModal === 'function'){
+                showResultModal(ok ? 'Éxito' : 'Error', text, ok);
+                return;
+            }
+            if(typeof showToast === 'function'){
+                showToast(text, ok ? 'success' : 'error');
+                return;
+            }
             const el = document.getElementById('rest-message');
             el.className = ok ? 'p-3 mb-4 bg-green-100 text-green-800 rounded' : 'p-3 mb-4 bg-red-100 text-red-800 rounded';
             el.innerText = text;
