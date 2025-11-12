@@ -6,6 +6,7 @@
 
     <form id="order-form" method="POST" action="{{ route('cliente.orden.store') }}">
         @csrf
+        <div id="order-message" class="mt-4 hidden"></div>
         <div class="mt-4">
             <label for="direccion_entrega">Dirección de entrega</label>
             <input id="direccion_entrega" name="direccion_entrega" type="text" class="border p-2 w-full" required />
@@ -65,9 +66,55 @@
         // Inicial: si hay productos pasados desde el servidor, agrega uno
         if (products.length) renderRow();
 
-        // Prevent default submit and submit via fetch to show JSON response
+        // Submit via AJAX to show friendly feedback without full page reload
         document.getElementById('order-form').addEventListener('submit', function (e) {
-            // Use normal POST to let controller handle validation — allow basic submit
+            e.preventDefault();
+            const msg = document.getElementById('order-message');
+            msg.classList.add('hidden');
+
+            const rows = Array.from(document.querySelectorAll('.product-row'));
+            const productos = rows.map((row, i) => {
+                const select = row.querySelector('select');
+                const qty = row.querySelector('input[type="number"]');
+                return { id: select.value, cantidad: parseInt(qty.value || '1', 10) };
+            }).filter(p => p.id);
+
+            const body = {
+                direccion_entrega: document.getElementById('direccion_entrega').value,
+                tipo_envio: document.getElementById('tipo_envio').value,
+                distancia: document.getElementById('distancia').value || null,
+                productos: productos
+            };
+
+            fetch(this.action, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify(body)
+            }).then(r => r.json())
+            .then(data => {
+                msg.classList.remove('hidden');
+                if (data.orden_id) {
+                    msg.className = 'mt-4 p-3 bg-green-100 text-green-800 rounded';
+                    msg.innerText = 'Orden creada correctamente. ID: ' + data.orden_id;
+                    // Optionally clear form
+                    // document.getElementById('order-form').reset();
+                } else if (data.error) {
+                    msg.className = 'mt-4 p-3 bg-red-100 text-red-800 rounded';
+                    msg.innerText = data.error || 'Error al crear la orden.';
+                } else {
+                    msg.className = 'mt-4 p-3 bg-yellow-100 text-yellow-800 rounded';
+                    msg.innerText = 'Respuesta inesperada.';
+                }
+            }).catch(err => {
+                msg.classList.remove('hidden');
+                msg.className = 'mt-4 p-3 bg-red-100 text-red-800 rounded';
+                msg.innerText = 'Error de red al enviar la orden.';
+                console.error(err);
+            });
         });
     })();
 </script>

@@ -172,4 +172,72 @@ class AdminController extends Controller
 
         return response()->json(['success' => true]);
     }
+
+    /**
+     * Crea una orden mínima a partir de datos ingresados en el modal y asigna un repartidor.
+     * Retorna JSON con success y el id de la nueva orden.
+     */
+    public function crearYAsignar(Request $request)
+    {
+        $auth = auth()->user();
+        if (! $auth || $auth->rol !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Acceso no autorizado'], 403);
+        }
+
+        $data = $request->validate([
+            'repartidor_id' => 'required|exists:users,id',
+            'restaurante_id' => 'required|exists:restaurantes,id',
+            'direccion_entrega' => 'required|string|max:500',
+            'total' => 'nullable|numeric',
+            'productos' => 'nullable|string',
+        ]);
+
+        // Validar que repartidor tenga rol correcto
+        $repartidor = User::where('id', $data['repartidor_id'])->where('rol', 'repartidor')->first();
+        if (! $repartidor) {
+            return response()->json(['success' => false, 'message' => 'Repartidor inválido'], 400);
+        }
+
+    // Crear orden mínima
+    $orden = new Orden();
+    $orden->restaurante_id = $data['restaurante_id'];
+    $orden->direccion_entrega = $data['direccion_entrega'];
+    $orden->total = $data['total'] ?? 0;
+    $orden->estado = 'preparando';
+    // Si la tabla exige cliente_id NOT NULL, asignamos el admin como cliente creador
+    $orden->cliente_id = $auth->id;
+    $orden->save();
+
+        // Asignar repartidor
+        $orden->repartidor_id = $repartidor->id;
+        try {
+            $orden->transicionarA('en_camino');
+        } catch (\InvalidArgumentException $e) {
+            // guardamos repartidor y devolvemos advertencia
+            $orden->save();
+            return response()->json(['success' => true, 'message' => 'Orden creada y repartidor asignado, pero no pudo pasar automáticamente a "en_camino".', 'orden_id' => $orden->id, 'repartidor_name' => $repartidor->name]);
+        }
+
+    return response()->json(['success' => true, 'message' => 'Orden creada y repartidor asignado.', 'orden_id' => $orden->id, 'orden' => $orden->toArray(), 'repartidor_name' => $repartidor->name, 'estado' => 'en_camino']);
+    }
+
+    /**
+     * Permite al admin cambiar el estado de cualquier orden (sin necesidad de ser restaurante).
+     */
+    public function cambiarEstadoAdmin(Request $request, Orden $orden)
+    {
+        $auth = auth()->user();
+        if (! $auth || $auth->rol !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Acceso no autorizado'], 403);
+        }
+
+        $data = $request->validate(['nuevo_estado' => 'required|string']);
+
+        try {
+            $orden->transicionarA($data['nuevo_estado']);
+            return response()->json(['success' => true, 'estado' => $orden->estado, 'message' => 'Estado actualizado.']);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
+        }
+    }
 }

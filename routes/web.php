@@ -34,6 +34,10 @@ Route::middleware('auth')->group(function () {
     // Rutas administrativas adicionales
     Route::get('/admin/asignacion', [\App\Http\Controllers\Admin\AdminController::class, 'showAsignacion'])->name('admin.asignacion');
     Route::post('/admin/ordenes/{orden}/asignar', [\App\Http\Controllers\Admin\AdminController::class, 'asignarRepartidor'])->name('admin.ordenes.asignar');
+    // Nueva ruta: crear una orden manualmente desde el modal y asignar repartidor al vuelo
+    Route::post('/admin/ordenes/crear-asignar', [\App\Http\Controllers\Admin\AdminController::class, 'crearYAsignar'])->name('admin.ordenes.crearAsignar');
+    // Permitir a admin cambiar estado de una orden (sin ser el restaurante)
+    Route::post('/admin/ordenes/{orden}/estado', [\App\Http\Controllers\Admin\AdminController::class, 'cambiarEstadoAdmin'])->name('admin.ordenes.cambiarEstado');
     
     // Rutas para cliente: crear orden (vista y envío)
     Route::get('cliente/orden/create', function () {

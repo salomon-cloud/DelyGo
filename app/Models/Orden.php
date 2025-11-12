@@ -6,6 +6,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\EstadosOrden\EstadoOrden; 
 use App\EstadosOrden\Recibida; // Importa los estados concretos
+use App\Models\Restaurante;
+use App\Models\User;
+use App\Models\Producto;
 
 class Orden extends Model
 {
@@ -48,5 +51,13 @@ class Orden extends Model
 
     // Relaciones...
     public function cliente() { return $this->belongsTo(User::class, 'cliente_id'); }
-    // ... otras relaciones...
+
+    // Restaurante al que pertenece la orden
+    public function restaurante() { return $this->belongsTo(Restaurante::class, 'restaurante_id'); }
+
+    // Repartidor asignado (User rol=repartidor)
+    public function repartidor() { return $this->belongsTo(User::class, 'repartidor_id'); }
+
+    // Productos relacionados (muchos a muchos) con pivot 'cantidad'
+    public function productos() { return $this->belongsToMany(Producto::class, 'orden_producto', 'orden_id', 'producto_id')->withPivot('cantidad'); }
 }

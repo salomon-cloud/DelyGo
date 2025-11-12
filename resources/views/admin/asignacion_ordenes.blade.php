@@ -89,21 +89,18 @@
 
         <div id="assign-modal-body">
             <div class="mb-2">
-                <label class="block text-sm font-medium">Orden</label>
-                <select id="modal-orden-select" class="w-full p-2 border">
-                    <option value="">-- Seleccionar orden --</option>
-                    @foreach($ordenes as $o)
-                        <option value="{{ $o->id }}">#{{ $o->id }} - {{ optional($o->cliente)->name ?? 'N/A' }} - {{ $o->estado }}</option>
-                    @endforeach
-                </select>
+                <label class="block text-sm font-medium">Dirección de entrega</label>
+                <input id="modal-direccion" class="w-full p-2 border" placeholder="Calle, número, referencia" />
             </div>
 
-            <div id="modal-orden-detalles" class="mb-4 text-sm text-gray-700">
-                <p><strong>Cliente:</strong> <span id="modal-cliente">-</span></p>
-                <p><strong>Dirección:</strong> <span id="modal-direccion">-</span></p>
-                <p><strong>Productos:</strong></p>
-                <ul id="modal-productos" class="list-disc ml-6 text-sm"></ul>
-                <p><strong>Total:</strong> <span id="modal-total">0.00</span></p>
+            <div class="mb-2">
+                <label class="block text-sm font-medium">Total (opcional)</label>
+                <input id="modal-total" type="number" step="0.01" class="w-full p-2 border" placeholder="0.00" />
+            </div>
+
+            <div class="mb-2">
+                <label class="block text-sm font-medium">Productos (lista breve)</label>
+                <textarea id="modal-productos" class="w-full p-2 border" rows="3" placeholder="Ej: Pizza x2, Ensalada x1"></textarea>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -160,21 +157,21 @@
                 const select = document.querySelector('.repartidor-select[data-orden-id="'+ordenId+'"]');
                 const repartidorId = select.value;
                 if(!repartidorId){
-                    alert('Seleccione un repartidor.');
+                    showToast('Seleccione un repartidor.', 'error');
                     return;
                 }
                 this.disabled = true;
                 jsonPost('/admin/ordenes/'+ordenId+'/asignar', { repartidor_id: repartidorId })
                     .then(data => {
                         this.disabled = false;
-                        if(data.success){
-                            document.getElementById('orden-repartidor-'+ordenId).innerText = data.repartidor_name || 'Asignado';
-                            if(data.estado){ document.getElementById('orden-estado-'+ordenId).innerText = data.estado; }
-                            alert('Repartidor asignado correctamente.');
-                        } else {
-                            alert(data.message || 'Error al asignar.');
-                        }
-                    }).catch(err => { this.disabled = false; alert('Error de red'); console.error(err); });
+                            if(data.success){
+                                document.getElementById('orden-repartidor-'+ordenId).innerText = data.repartidor_name || 'Asignado';
+                                if(data.estado){ document.getElementById('orden-estado-'+ordenId).innerText = data.estado; }
+                                showToast('Repartidor asignado correctamente.', 'success');
+                            } else {
+                                showToast(data.message || 'Error al asignar.', 'error');
+                            }
+                    }).catch(err => { this.disabled = false; showToast('Error de red', 'error'); console.error(err); });
             });
         });
 
@@ -184,18 +181,18 @@
                 const ordenId = this.dataset.ordenId;
                 const select = document.querySelector('.estado-select[data-orden-id="'+ordenId+'"]');
                 const nuevoEstado = select.value;
-                if(!nuevoEstado){ alert('Seleccione un estado'); return; }
+                if(!nuevoEstado){ showToast('Seleccione un estado', 'error'); return; }
                 this.disabled = true;
-                jsonPost('/restaurante/ordenes/'+ordenId+'/estado', { nuevo_estado: nuevoEstado })
+                jsonPost('/admin/ordenes/'+ordenId+'/estado', { nuevo_estado: nuevoEstado })
                     .then(data => {
                         this.disabled = false;
-                        if(data.success){
-                            document.getElementById('orden-estado-'+ordenId).innerText = nuevoEstado;
-                            alert('Estado actualizado.');
-                        } else {
-                            alert(data.message || 'Error al cambiar estado.');
-                        }
-                    }).catch(err => { this.disabled = false; alert('Error de red'); console.error(err); });
+                            if(data.success){
+                                document.getElementById('orden-estado-'+ordenId).innerText = nuevoEstado;
+                                showToast('Estado actualizado.', 'success');
+                            } else {
+                                showToast(data.message || 'Error al cambiar estado.', 'error');
+                            }
+                    }).catch(err => { this.disabled = false; showToast('Error de red', 'error'); console.error(err); });
             });
         });
 
@@ -213,19 +210,6 @@
         const restauranteSelect = document.getElementById('modal-restaurante-select');
         const confirmBtn = document.getElementById('modal-assign-btn');
 
-        // Orders data from server
-        const ordersData = {!! json_encode($ordenes->map(function($o){
-            return [
-                'id' => $o->id,
-                'estado' => $o->estado,
-                'cliente' => $o->cliente ? $o->cliente->name : null,
-                'direccion' => $o->direccion_entrega ?? $o->direccion ?? null,
-                'productos' => $o->productos ? $o->productos->map(function($p){ return ['nombre'=>$p->nombre, 'cantidad'=>($p->pivot->cantidad ?? 1), 'precio'=>$p->precio]; }) : [],
-                'total' => $o->total ?? 0,
-                'restaurante_id' => $o->restaurante ? $o->restaurante->id : null,
-            ];
-        })) !!};
-
         function openModal(){ modal.classList.remove('hidden'); }
         function closeModal(){ modal.classList.add('hidden'); }
 
@@ -233,56 +217,36 @@
         closeBtn && closeBtn.addEventListener('click', function(){ closeModal(); });
         cancelBtn && cancelBtn.addEventListener('click', function(){ closeModal(); });
 
-        ordenSelect && ordenSelect.addEventListener('change', function(){
-            const id = parseInt(this.value);
-            const ord = ordersData.find(o => o.id === id);
-            if(!ord){ clienteSpan.innerText = '-'; direccionSpan.innerText = '-'; productosList.innerHTML = ''; totalSpan.innerText = '0.00'; return; }
-            clienteSpan.innerText = ord.cliente || 'N/A';
-            direccionSpan.innerText = ord.direccion || 'N/A';
-            productosList.innerHTML = '';
-            ord.productos.forEach(p => {
-                const li = document.createElement('li');
-                li.innerText = `${p.nombre} x ${p.cantidad} (${p.precio} c/u)`;
-                productosList.appendChild(li);
-            });
-            totalSpan.innerText = parseFloat(ord.total).toFixed(2);
-            // pre-select restaurante related to order if available
-            if(ord.restaurante_id){
-                const opt = restauranteSelect.querySelector('option[value="'+ord.restaurante_id+'"]');
-                if(opt) opt.selected = true;
-            }
-        });
+        // Note: the modal now accepts manual order input; only repartidores and restaurantes are fetched from DB
 
         confirmBtn && confirmBtn.addEventListener('click', function(){
-            const ordenId = ordenSelect.value;
             const repartidorId = repartidorSelect.value;
             const restauranteId = restauranteSelect.value;
-            if(!ordenId){ alert('Seleccione una orden'); return; }
-            if(!repartidorId){ alert('Seleccione un repartidor'); return; }
-            // For demo we call the existing assign endpoint; restauranteId is informational here
-            fetch('/admin/ordenes/'+ordenId+'/asignar', {
+            const direccion = document.getElementById('modal-direccion').value.trim();
+            const total = document.getElementById('modal-total').value || null;
+            const productosText = document.getElementById('modal-productos').value || null;
+
+            if(!repartidorId){ showToast('Seleccione un repartidor', 'error'); return; }
+            if(!restauranteId){ showToast('Seleccione un restaurante', 'error'); return; }
+            if(!direccion){ showToast('Ingrese la dirección de entrega', 'error'); return; }
+
+            fetch('/admin/ordenes/crear-asignar', {
                 method: 'POST',
                 headers: {
                     'Accept':'application/json',
                     'Content-Type':'application/json',
                     'X-CSRF-TOKEN': csrf
                 },
-                body: JSON.stringify({ repartidor_id: repartidorId })
+                body: JSON.stringify({ repartidor_id: repartidorId, restaurante_id: restauranteId, direccion_entrega: direccion, total: total, productos: productosText })
             }).then(r => r.json()).then(data => {
                 if(data.success){
-                    alert('Asignación realizada correctamente');
+                    showToast(data.message || 'Orden creada y repartidor asignado', 'success');
                     closeModal();
-                    // update UI if present
-                    const repName = data.repartidor_name || 'Asignado';
-                    const estado = data.estado || '';
-                    const repElem = document.getElementById('orden-repartidor-'+ordenId);
-                    const estElem = document.getElementById('orden-estado-'+ordenId);
-                    if(repElem) repElem.innerText = repName;
-                    if(estElem && estado) estElem.innerText = estado;
+                    // Optionally add a new row to the table if desired
                 } else {
-                    alert(data.message || 'Error al asignar');
+                    showToast(data.message || 'Error al crear y asignar', 'error');
                 }
-            }).catch(err => { alert('Error de red'); console.error(err); });
+            }).catch(err => { showToast('Error de red', 'error'); console.error(err); });
         });
 
     })();
