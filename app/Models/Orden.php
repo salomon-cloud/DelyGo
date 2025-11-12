@@ -19,9 +19,10 @@ class Orden extends Model
     // Mapeo de estados a clases concretas
     protected $estadosMap = [
         'recibida' => Recibida::class,
-        // 'preparando' => Preparando::class, 
-        // 'en_camino' => EnCamino::class,
-        // ... otros estados
+        'preparando' => \App\EstadosOrden\Preparando::class,
+        'en_camino' => \App\EstadosOrden\EnCamino::class,
+        'entregada' => \App\EstadosOrden\Entregada::class,
+        'cancelada' => \App\EstadosOrden\Cancelada::class,
     ];
 
     // Propiedad para el objeto Estado actual

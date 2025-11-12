@@ -17,11 +17,9 @@ class AdminController extends Controller
      */
     public function showAsignacion()
     {
-        // 1. Órdenes que necesitan ser asignadas (estado 'preparando' y sin repartidor)
-        $ordenes = Orden::where('estado', 'preparando')
-            ->whereNull('repartidor_id')
-            // Cargar relaciones necesarias para la vista
-            ->with(['restaurante:id,nombre', 'cliente:id,name', 'productos', 'repartidor'])
+        // 1. Mostrar todas las órdenes para administración (no filtrar) — el UI permite asignar/cambiar estado
+        $ordenes = Orden::with(['restaurante:id,nombre', 'cliente:id,name', 'productos', 'repartidor'])
+            ->orderBy('id', 'desc')
             ->get();
             
         // 2. Repartidores disponibles (todos) y samples para la inyección de demo
