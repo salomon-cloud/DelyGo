@@ -66,7 +66,7 @@ class AdminController extends Controller
         $orden->repartidor_id = $repartidor->id;
         // La orden debe estar en 'preparando' para poder ser asignada.
         
-        // 2. 🎯 Cambio de estado automatizado (Patrón State)
+        // 2.  Cambio de estado automatizado (Patrón State)
         try {
             // Cuando se asigna el repartidor, la orden pasa inmediatamente a 'en_camino'.
             $orden->transicionarA('en_camino');

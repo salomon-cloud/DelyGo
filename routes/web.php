@@ -39,6 +39,13 @@ Route::middleware('auth')->group(function () {
     // Permitir a admin cambiar estado de una orden (sin ser el restaurante)
     Route::post('/admin/ordenes/{orden}/estado', [\App\Http\Controllers\Admin\AdminController::class, 'cambiarEstadoAdmin'])->name('admin.ordenes.cambiarEstado');
     
+    // Rutas para gestión de restaurantes (solo admin)
+    Route::get('/admin/restaurantes', [\App\Http\Controllers\Admin\RestauranteController::class, 'index'])->name('admin.restaurantes');
+    Route::post('/admin/restaurantes', [\App\Http\Controllers\Admin\RestauranteController::class, 'store'])->name('admin.restaurantes.store');
+    Route::get('/admin/restaurantes/{restaurante}/edit', [\App\Http\Controllers\Admin\RestauranteController::class, 'edit'])->name('admin.restaurantes.edit');
+    Route::put('/admin/restaurantes/{restaurante}', [\App\Http\Controllers\Admin\RestauranteController::class, 'update'])->name('admin.restaurantes.update');
+    Route::delete('/admin/restaurantes/{restaurante}', [\App\Http\Controllers\Admin\RestauranteController::class, 'destroy'])->name('admin.restaurantes.destroy');
+    
     // Rutas para cliente: crear orden (vista y envío)
     Route::get('cliente/orden/create', function () {
         $products = \App\Models\Producto::all(['id','nombre','precio']);
