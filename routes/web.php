@@ -46,6 +46,14 @@ Route::middleware('auth')->group(function () {
     Route::put('/admin/restaurantes/{restaurante}', [\App\Http\Controllers\Admin\RestauranteController::class, 'update'])->name('admin.restaurantes.update');
     Route::delete('/admin/restaurantes/{restaurante}', [\App\Http\Controllers\Admin\RestauranteController::class, 'destroy'])->name('admin.restaurantes.destroy');
     
+    // Rutas para gestión de productos (solo admin)
+    Route::get('/admin/productos', [\App\Http\Controllers\Admin\ProductoController::class, 'index'])->name('admin.productos');
+    Route::post('/admin/productos', [\App\Http\Controllers\Admin\ProductoController::class, 'store'])->name('admin.productos.store');
+    Route::get('/admin/productos/{producto}/edit', [\App\Http\Controllers\Admin\ProductoController::class, 'edit'])->name('admin.productos.edit');
+    Route::put('/admin/productos/{producto}', [\App\Http\Controllers\Admin\ProductoController::class, 'update'])->name('admin.productos.update');
+    Route::delete('/admin/productos/{producto}', [\App\Http\Controllers\Admin\ProductoController::class, 'destroy'])->name('admin.productos.destroy');
+    Route::patch('/admin/productos/{producto}/toggle', [\App\Http\Controllers\Admin\ProductoController::class, 'toggleDisponibilidad'])->name('admin.productos.toggle');
+    
     // Rutas para cliente: crear orden (vista y envío)
     Route::get('cliente/orden/create', function () {
         $products = \App\Models\Producto::all(['id','nombre','precio']);
