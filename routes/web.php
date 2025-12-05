@@ -56,9 +56,23 @@ Route::middleware('auth')->group(function () {
     
     // Rutas para cliente: crear orden (vista y envío)
     Route::get('cliente/orden/create', function () {
-        $products = \App\Models\Producto::all(['id','nombre','precio']);
-        return view('cliente.crear_orden', ['products' => $products]);
+        // Mostrar lista de restaurantes para seleccionar
+        $restaurantes = \App\Models\Restaurante::all(['id', 'nombre', 'descripcion', 'direccion']);
+        return view('cliente.seleccionar_restaurante', ['restaurantes' => $restaurantes]);
     })->name('cliente.orden.create');
+
+    // Ruta para crear orden con restaurante específico
+    Route::get('cliente/orden/create/{restaurante}', function (\App\Models\Restaurante $restaurante) {
+        // Cargar solo los productos del restaurante seleccionado
+        $products = $restaurante->productos()->where('disponible', true)->get(['id','nombre','precio','descripcion']);
+        return view('cliente.crear_orden', ['products' => $products, 'restaurante' => $restaurante]);
+    })->name('cliente.orden.create.restaurante');
+
+    // Endpoint AJAX para obtener productos por restaurante
+    Route::get('cliente/orden/productos/{restaurante}', function (\App\Models\Restaurante $restaurante) {
+        $productos = $restaurante->productos()->where('disponible', true)->get(['id','nombre','precio', 'descripcion']);
+        return response()->json(['productos' => $productos]);
+    })->name('cliente.orden.productos');
 
     Route::post('cliente/orden', [\App\Http\Controllers\Cliente\OrdenController::class, 'store'])
         ->name('cliente.orden.store');
