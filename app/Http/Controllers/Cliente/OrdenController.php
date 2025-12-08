@@ -9,29 +9,63 @@ use App\Models\Orden;
 use App\Services\OrdenBuilder; 
 use App\EstrategiasEnvio\EnvioEstandar; 
 use App\EstrategiasEnvio\EnvioPremium;
+use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\StoreOrdenRequest;
 use Exception;
 // Inertia removed: using Blade views instead
 
 class OrdenController extends Controller
 {
     /**
+     * Muestra el historial de órdenes del cliente autenticado.
+     */
+    public function index()
+    {
+        $cliente = auth()->user();
+        if (! $cliente) {
+            abort(401, 'Debes estar autenticado.');
+        }
+
+        // Obtener todas las órdenes del cliente, ordenadas por más recientes
+        $ordenes = Orden::where('cliente_id', $cliente->id)
+            ->with(['restaurante:id,nombre', 'repartidor:id,name', 'rating'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+
+        return view('cliente.ordenes_historial', [
+            'ordenes' => $ordenes,
+        ]);
+    }
+
+    /**
+     * Muestra el detalle y tracking de una orden específica.
+     * @param \App\Models\Orden $orden La orden a trackear.
+     */
+    public function show(Orden $orden)
+    {
+        // Verificar propiedad (seguridad)
+        if ($orden->cliente_id !== auth()->id()) {
+            abort(403, 'Acceso denegado. No eres el dueño de esta orden.');
+        }
+
+        // Cargar relaciones
+        $orden->load(['restaurante:id,nombre', 'repartidor:id,name', 'productos', 'cliente:id,name,email', 'rating']);
+
+        return view('cliente.tracking', [
+            'orden' => $orden,
+        ]);
+    }
+    /**
      * Almacena una nueva orden (Implementa Patrón Builder y Strategy).
      */
-    public function store(Request $request)
+    public function store(StoreOrdenRequest $request)
     {
-        // Validación básica de los datos de la orden
-        $request->validate([
-            'direccion_entrega' => 'required|string|max:255',
-            'productos' => 'required|array|min:1',
-            'productos.*.id' => 'required|exists:productos,id',
-            'productos.*.cantidad' => 'required|integer|min:1',
-            'tipo_envio' => 'nullable|in:estandar,premium',
-            'distancia' => 'nullable|numeric|min:0',
-        ]);
+        // Validación realizada por StoreOrdenRequest
+        $validated = $request->validated();
         
         // 🚨 SIMULACIÓN de datos de entrada necesarios para el Patrón Strategy
-        $distanciaSimulada = $request->distancia ?? 5.0; // Distancia en KM (simulada)
-        $tipoEnvioElegido = $request->tipo_envio ?? 'estandar'; 
+        $distanciaSimulada = 5.0; // Distancia en KM (simulada)
+        $tipoEnvioElegido = 'estandar'; 
         
         // 1. 🎯 Elegir la Estrategia de Envío (Patrón Strategy)
         $estrategia = match ($tipoEnvioElegido) {
@@ -140,6 +174,50 @@ class OrdenController extends Controller
             // 3. Si el Patrón State prohíbe la transición, devuelve error 400
             return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
         }
+    }
+
+    /**
+     * Dashboard para clientes
+     */
+    public function dashboardCliente()
+    {
+        $cliente = auth()->user();
+        if ($cliente->rol !== 'cliente') {
+            abort(403, 'No autorizado');
+        }
+
+        $totalOrdenes = Orden::where('cliente_id', $cliente->id)->count();
+        $ordenesActivas = Orden::where('cliente_id', $cliente->id)
+            ->whereIn('estado', ['recibida', 'preparando', 'en_camino'])
+            ->count();
+        $ordenesEntregadas = Orden::where('cliente_id', $cliente->id)
+            ->where('estado', 'entregada')
+            ->count();
+        $ordenesCanceladas = Orden::where('cliente_id', $cliente->id)
+            ->where('estado', 'cancelada')
+            ->count();
+
+        $ordenesActuales = Orden::where('cliente_id', $cliente->id)
+            ->whereIn('estado', ['recibida', 'preparando', 'en_camino'])
+            ->with(['restaurante', 'repartidor'])
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get();
+
+        $ultimasOrdenes = Orden::where('cliente_id', $cliente->id)
+            ->with(['restaurante'])
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
+
+        return view('cliente.dashboard', [
+            'totalOrdenes' => $totalOrdenes,
+            'ordenesActivas' => $ordenesActivas,
+            'ordenesEntregadas' => $ordenesEntregadas,
+            'ordenesCanceladas' => $ordenesCanceladas,
+            'ordenesActuales' => $ordenesActuales,
+            'ultimasOrdenes' => $ultimasOrdenes,
+        ]);
     }
 }
 

@@ -17,7 +17,8 @@ return new class extends Migration
                // Referencia explícita a la tabla 'ordenes'
                $table->foreignId('orden_id')->constrained('ordenes')->onDelete('cascade');
                $table->foreignId('cliente_id')->constrained('users')->onDelete('cascade');
-               $table->integer('calificacion')->comment('1 a 5 estrellas'); // Calificación 1-5
+               $table->foreignId('repartidor_id')->nullable()->constrained('users')->nullOnDelete();
+               $table->tinyInteger('puntuacion')->unsigned(); // 1-5 estrellas
                $table->text('comentario')->nullable();
                $table->timestamps();
            });

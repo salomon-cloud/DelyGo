@@ -4,6 +4,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\EstadosOrden\EstadoOrden; 
 use App\EstadosOrden\Recibida; // Importa los estados concretos
 use App\Models\Restaurante;
@@ -12,6 +13,7 @@ use App\Models\Producto;
 
 class Orden extends Model
 {
+    use HasFactory;
     // Nombre explícito de la tabla para coincidir con la migración (español)
     protected $table = 'ordenes';
     protected $fillable = ['cliente_id', 'restaurante_id', 'repartidor_id', 'estado', 'total', 'direccion_entrega'];
@@ -46,8 +48,8 @@ class Orden extends Model
         $this->getEstadoObjeto()->manejarTransicion($this, $nuevoEstado);
         $this->save(); // Guarda el cambio de estado en la DB
 
-        // Disparar Evento (Patrón Observer - Ver Paso 5)
-        // event(new \App\Events\EstadoOrdenCambio($this)); 
+        // Disparar Evento (Patrón Observer)
+        event(new \App\Events\EstadoOrdenCambio($this)); 
     }
 
     // Relaciones...
@@ -58,6 +60,12 @@ class Orden extends Model
 
     // Repartidor asignado (User rol=repartidor)
     public function repartidor() { return $this->belongsTo(User::class, 'repartidor_id'); }
+
+    // Relación 1:1 con Rating (si existe una calificación para la orden)
+    public function rating()
+    {
+        return $this->hasOne(Rating::class, 'orden_id');
+    }
 
     // Productos relacionados (muchos a muchos) con pivot 'cantidad'
     public function productos() { return $this->belongsToMany(Producto::class, 'orden_producto', 'orden_id', 'producto_id')->withPivot('cantidad'); }

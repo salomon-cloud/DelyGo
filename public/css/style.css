@@ -1,0 +1,455 @@
+/* ========================================
+   DelyGo - Estilos Básicos
+   ======================================== */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --primary-color: #FF6B35;
+  --secondary-color: #004E89;
+  --success-color: #28a745;
+  --danger-color: #dc3545;
+  --warning-color: #ffc107;
+  --info-color: #17a2b8;
+  --light-bg: #f8f9fa;
+  --dark-text: #333;
+  --border-color: #dee2e6;
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--light-bg);
+  color: var(--dark-text);
+  line-height: 1.6;
+}
+
+/* ========================================
+   Encabezado y Navegación
+   ======================================== */
+
+header {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  padding: 1rem 2rem;
+  box-shadow: var(--shadow);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+header h1 {
+  font-size: 1.8rem;
+  margin-bottom: 0.5rem;
+}
+
+nav {
+  display: flex;
+  gap: 2rem;
+  margin-top: 1rem;
+}
+
+nav a {
+  color: white;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  transition: background 0.3s;
+}
+
+nav a:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* ========================================
+   Contenedor Principal
+   ======================================== */
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* ========================================
+   Tarjetas
+   ======================================== */
+
+.card {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.card-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--secondary-color);
+}
+
+.card-body {
+  font-size: 0.95rem;
+}
+
+/* ========================================
+   Botones
+   ======================================== */
+
+button,
+.btn {
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-weight: 500;
+}
+
+.btn-primary {
+  background: var(--primary-color);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #e55a2b;
+  transform: scale(1.05);
+}
+
+.btn-secondary {
+  background: var(--secondary-color);
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #003a63;
+}
+
+.btn-success {
+  background: var(--success-color);
+  color: white;
+}
+
+.btn-success:hover {
+  background: #218838;
+}
+
+.btn-danger {
+  background: var(--danger-color);
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #c82333;
+}
+
+.btn-sm {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+}
+
+.btn-lg {
+  padding: 0.8rem 1.6rem;
+  font-size: 1.1rem;
+}
+
+/* ========================================
+   Formularios
+   ======================================== */
+
+form {
+  max-width: 600px;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--secondary-color);
+}
+
+input[type='text'],
+input[type='email'],
+input[type='password'],
+input[type='number'],
+textarea,
+select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: border-color 0.3s;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.form-error {
+  color: var(--danger-color);
+  font-size: 0.85rem;
+  margin-top: 0.3rem;
+}
+
+/* ========================================
+   Tablas
+   ======================================== */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  margin-bottom: 1.5rem;
+}
+
+thead {
+  background: var(--secondary-color);
+  color: white;
+}
+
+th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+}
+
+td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+tbody tr:hover {
+  background: var(--light-bg);
+}
+
+/* ========================================
+   Estados de Órdenes
+   ======================================== */
+
+.estado-badge {
+  display: inline-block;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.estado-recibida {
+  background: #e7f3ff;
+  color: var(--info-color);
+}
+
+.estado-preparando {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.estado-en-camino {
+  background: #cfe2ff;
+  color: var(--secondary-color);
+}
+
+.estado-entregada {
+  background: #d1e7dd;
+  color: var(--success-color);
+}
+
+.estado-cancelada {
+  background: #f8d7da;
+  color: var(--danger-color);
+}
+
+/* ========================================
+   Ratings
+   ======================================== */
+
+.rating {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.star {
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #ddd;
+  transition: color 0.2s;
+}
+
+.star:hover,
+.star.active {
+  color: var(--warning-color);
+}
+
+/* ========================================
+   Listas
+   ======================================== */
+
+ul, ol {
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+li {
+  margin-bottom: 0.5rem;
+}
+
+/* ========================================
+   Alertas
+   ======================================== */
+
+.alert {
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  border-left: 4px solid;
+}
+
+.alert-success {
+  background: #d1e7dd;
+  border-color: var(--success-color);
+  color: #0f5132;
+}
+
+.alert-danger {
+  background: #f8d7da;
+  border-color: var(--danger-color);
+  color: #842029;
+}
+
+.alert-warning {
+  background: #fff3cd;
+  border-color: var(--warning-color);
+  color: #664d03;
+}
+
+.alert-info {
+  background: #cfe2ff;
+  border-color: var(--info-color);
+  color: #084298;
+}
+
+/* ========================================
+   Paginación
+   ======================================== */
+
+.pagination {
+  display: flex;
+  gap: 0.5rem;
+  margin: 2rem 0;
+  justify-content: center;
+}
+
+.pagination a,
+.pagination span {
+  padding: 0.5rem 0.8rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  text-decoration: none;
+  color: var(--secondary-color);
+  transition: all 0.3s;
+}
+
+.pagination a:hover {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.pagination .active {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+/* ========================================
+   Footer
+   ======================================== */
+
+footer {
+  background: var(--secondary-color);
+  color: white;
+  text-align: center;
+  padding: 2rem;
+  margin-top: 3rem;
+}
+
+/* ========================================
+   Responsive
+   ======================================== */
+
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  header {
+    padding: 1rem;
+  }
+
+  nav {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  table {
+    font-size: 0.85rem;
+  }
+
+  th, td {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .card {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  header h1 {
+    font-size: 1.4rem;
+  }
+
+  .container {
+    padding: 0.5rem;
+  }
+
+  button, .btn {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+
+  form {
+    max-width: 100%;
+  }
+}

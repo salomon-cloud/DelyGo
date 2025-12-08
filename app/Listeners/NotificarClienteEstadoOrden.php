@@ -3,8 +3,11 @@
 namespace App\Listeners;
 
 use App\Events\EstadoOrdenCambio;
+use App\Mail\OrdenEstadoCambio;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class NotificarClienteEstadoOrden
 {
@@ -22,14 +25,21 @@ class NotificarClienteEstadoOrden
     public function handle(EstadoOrdenCambio $event): void
     {
         $orden = $event->orden;
+        $cliente = $orden->cliente;
 
-        // Enviar correo (ejemplo)
-        \Mail::to($orden->cliente->email)->send(new NotificacionEstadoOrden($orden));
+        if (! $cliente) {
+            return;
+        }
 
-        // Log de la notificación (ejemplo)
-        \Log::info("Notificado al cliente {$orden->cliente->id} sobre el estado '{$orden->estado}' de la orden #{$orden->id}");
+        // Log de la notificación
+        Log::info("[Notificación] Cliente {$cliente->id} ({$cliente->email}): Orden #{$orden->id} está en estado '{$orden->estado}'");
 
-        // Lógica para enviar notificación por Laravel Echo (real-time, ver Paso 8)
-
+        // Enviar email al cliente
+        try {
+            Mail::to($cliente->email)->send(new OrdenEstadoCambio($orden));
+            Log::info("[Email Enviado] Notificación de cambio de estado enviada a {$cliente->email}");
+        } catch (\Exception $e) {
+            Log::error("[Email Error] Fallo al enviar notificación a {$cliente->email}: " . $e->getMessage());
+        }
     }
 }

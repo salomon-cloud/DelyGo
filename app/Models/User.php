@@ -56,4 +56,12 @@ class User extends Authenticatable
     {
         return $this->hasOne(Restaurante::class);
     }
+
+    /**
+     * Relación con órdenes (si es repartidor, tiene muchas órdenes asignadas).
+     */
+    public function ordenes()
+    {
+        return $this->hasMany(Orden::class, 'repartidor_id');
+    }
 }

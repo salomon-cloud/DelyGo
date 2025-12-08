@@ -90,4 +90,57 @@ class ProductoController extends Controller
         $producto->delete();
         return redirect()->route('productos.index');
     }
+
+    /**
+     * Dashboard para restaurantes
+     */
+    public function dashboardRestaurante()
+    {
+        $restaurante = auth()->user()->restaurante;
+        
+        if (!$restaurante) {
+            abort(403, 'No autorizado');
+        }
+
+        $totalProductos = Producto::where('restaurante_id', $restaurante->id)->count();
+        
+        $ordenesPendientes = \App\Models\Orden::where('restaurante_id', $restaurante->id)
+            ->where('estado', 'recibida')
+            ->count();
+
+        $ordenesEntregadas = \App\Models\Orden::where('restaurante_id', $restaurante->id)
+            ->where('estado', 'entregada')
+            ->count();
+
+        $productosSinStock = Producto::where('restaurante_id', $restaurante->id)
+            ->where('disponible', 0)
+            ->count();
+
+        $ordenesPreparar = \App\Models\Orden::where('restaurante_id', $restaurante->id)
+            ->where('estado', 'recibida')
+            ->with(['cliente', 'items'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $ordenesEnPrep = \App\Models\Orden::where('restaurante_id', $restaurante->id)
+            ->where('estado', 'preparando')
+            ->with(['cliente', 'items'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $productos = Producto::where('restaurante_id', $restaurante->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('restaurante.dashboard', [
+            'restaurante' => $restaurante,
+            'totalProductos' => $totalProductos,
+            'ordenesPendientes' => $ordenesPendientes,
+            'ordenesEntregadas' => $ordenesEntregadas,
+            'productosSinStock' => $productosSinStock,
+            'ordenesPreparar' => $ordenesPreparar,
+            'ordenesEnPrep' => $ordenesEnPrep,
+            'productos' => $productos,
+        ]);
+    }
 }

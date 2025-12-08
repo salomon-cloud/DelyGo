@@ -25,6 +25,23 @@
                 </ul>
             </div>
 
+            {{-- Formulario de calificación: solo si la orden está entregada y no tiene rating --}}
+            @if(isset($orden) && $orden->estado === 'entregada')
+                @if(empty($orden->rating))
+                    @include('cliente.rating_form')
+                @else
+                    <div class="p-4 bg-white rounded shadow">
+                        <h4 class="font-medium">Tu calificación</h4>
+                        <div class="mt-2">
+                            <strong>Puntuación:</strong> {{ $orden->rating->puntuacion }} / 5
+                            @if($orden->rating->comentario)
+                                <div class="mt-2 text-sm text-gray-700">"{{ $orden->rating->comentario }}"</div>
+                            @endif
+                        </div>
+                    </div>
+                @endif
+            @endif
+
             <div class="p-4 bg-white rounded shadow">
                 <h4 class="font-medium">Mapa / Seguimiento</h4>
                 <div class="mt-2 text-sm text-gray-600">(Aquí puedes agregar un mapa o enlace al servicio de tracking)</div>

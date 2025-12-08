@@ -15,6 +15,18 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
+    $user = auth()->user();
+    
+    if ($user->rol === 'admin') {
+        return redirect()->route('admin.dashboard');
+    } elseif ($user->rol === 'cliente') {
+        return redirect()->route('cliente.dashboard');
+    } elseif ($user->rol === 'repartidor') {
+        return redirect()->route('repartidor.dashboard');
+    } elseif ($user->rol === 'restaurante') {
+        return redirect()->route('restaurante.dashboard');
+    }
+    
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
@@ -23,7 +35,20 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Rutas administrativas (requieren auth; AdminController valida rol)
+    // ===== DASHBOARDS POR ROL =====
+    // Dashboard Admin
+    Route::get('/admin/dashboard', [\App\Http\Controllers\Admin\AdminController::class, 'dashboard'])->name('admin.dashboard');
+    
+    // Dashboard Cliente
+    Route::get('/cliente/dashboard', [\App\Http\Controllers\Cliente\OrdenController::class, 'dashboardCliente'])->name('cliente.dashboard');
+    
+    // Dashboard Repartidor
+    Route::get('/repartidor/dashboard', [\App\Http\Controllers\RepartidorController::class, 'dashboard'])->name('repartidor.dashboard');
+    
+    // Dashboard Restaurante
+    Route::get('/restaurante/dashboard', [\App\Http\Controllers\Restaurante\ProductoController::class, 'dashboardRestaurante'])->name('restaurante.dashboard');
+
+    // ===== RUTAS ADMINISTRATIVAS =====
     Route::get('/admin/users', [\App\Http\Controllers\Admin\AdminController::class, 'usuarios'])->name('admin.users');
     Route::post('/admin/users/{user}/role', [\App\Http\Controllers\Admin\AdminController::class, 'updateUserRole'])->name('admin.users.updateRole');
     // API para gestión desde modal (JSON)
@@ -76,6 +101,34 @@ Route::middleware('auth')->group(function () {
 
     Route::post('cliente/orden', [\App\Http\Controllers\Cliente\OrdenController::class, 'store'])
         ->name('cliente.orden.store');
+
+    // Rutas para historial y tracking de órdenes del cliente
+    Route::get('cliente/ordenes', [\App\Http\Controllers\Cliente\OrdenController::class, 'index'])
+        ->name('cliente.ordenes.index');
+    Route::get('cliente/ordenes/{orden}', [\App\Http\Controllers\Cliente\OrdenController::class, 'show'])
+        ->name('cliente.ordenes.show');
+
+    // Rutas para Ratings (calificaciones) - clientes autenticados
+    Route::post('/ratings', [\App\Http\Controllers\RatingController::class, 'store'])
+        ->name('ratings.store');
+
+    // Rutas para repartidores
+    Route::get('repartidor/ordenes', [\App\Http\Controllers\RepartidorController::class, 'misOrdenes'])
+        ->name('repartidor.ordenes');
+    Route::get('repartidor/ordenes/{orden}', [\App\Http\Controllers\RepartidorController::class, 'verOrden'])
+        ->name('repartidor.ordenes.ver');
+    Route::post('repartidor/ordenes/{orden}/estado', [\App\Http\Controllers\RepartidorController::class, 'actualizarEstado'])
+        ->name('repartidor.ordenes.estado');
+    Route::get('repartidor/historial', [\App\Http\Controllers\RepartidorController::class, 'historial'])
+        ->name('repartidor.historial');
+
+    // Rutas para pagos (placeholder)
+    Route::get('pago/checkout', [\App\Http\Controllers\PagoController::class, 'checkout'])
+        ->name('pago.checkout');
+    Route::post('pago/procesar', [\App\Http\Controllers\PagoController::class, 'procesar'])
+        ->name('pago.procesar');
+    Route::get('pago/confirmacion/{transaccion_id}', [\App\Http\Controllers\PagoController::class, 'confirmacion'])
+        ->name('pago.confirmacion');
 
     // Rutas para gestión de productos del restaurante
     Route::get('restaurante/productos', [\App\Http\Controllers\Restaurante\ProductoController::class, 'index'])->name('productos.index');

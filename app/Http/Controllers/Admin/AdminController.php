@@ -275,4 +275,102 @@ class AdminController extends Controller
             return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
         }
     }
+
+    /**
+     * Dashboard principal del administrador
+     */
+    public function dashboard()
+    {
+        // Validar que sea admin
+        if (auth()->user()->rol !== 'admin') {
+            abort(403, 'No autorizado');
+        }
+
+        // Estadísticas globales
+        $totalRestaurantes = Restaurante::count();
+        $totalProductos = \App\Models\Producto::count();
+        $totalOrdenes = Orden::count();
+        $totalRepartidores = User::where('rol', 'repartidor')->count();
+        $totalUsuarios = User::count();
+        $ventasTotal = Orden::sum('total');
+
+        // Detalles de órdenes
+        $ordenesRecibidas = Orden::where('estado', 'recibida')->count();
+        $ordenesPreparando = Orden::where('estado', 'preparando')->count();
+        $ordenesEntregadas = Orden::where('estado', 'entregada')->count();
+        $ordenesCanceladas = Orden::where('estado', 'cancelada')->count();
+        $ordenesSinAsignar = Orden::whereNull('repartidor_id')->whereNotIn('estado', ['entregada', 'cancelada'])->count();
+        $ordenesRestaurantes = Orden::count();
+
+        // Usuarios por rol
+        $clientesCount = User::where('rol', 'cliente')->count();
+        $restaurantesCount = User::where('rol', 'restaurante')->count();
+        $repartidoresCount = User::where('rol', 'repartidor')->count();
+        $adminsCount = User::where('rol', 'admin')->count();
+
+        // Repartidores activos (con órdenes entregadas hoy)
+        $repartidoresActivos = User::where('rol', 'repartidor')
+            ->whereHas('ordenes', function($q) {
+                $q->where('updated_at', '>=', now()->subHours(24));
+            })
+            ->count();
+
+        // Total de entregas
+        $totalEntregas = Orden::where('estado', 'entregada')->count();
+
+        // Órdenes recientes (últimas 10)
+        $ordenesRecientes = Orden::with(['cliente', 'restaurante', 'repartidor'])
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
+
+        // Últimos usuarios
+        $ultimosUsuarios = User::orderBy('created_at', 'desc')->limit(5)->get();
+
+        // Top restaurantes
+        $topRestaurantes = Restaurante::withCount('ordenes')
+            ->orderBy('ordenes_count', 'desc')
+            ->limit(3)
+            ->get(['id', 'nombre'])
+            ->map(function($r) { 
+                return ['nombre' => $r->nombre, 'ordenes_count' => $r->ordenes_count]; 
+            })
+            ->toArray();
+
+        // Top repartidores
+        $topRepartidores = User::where('rol', 'repartidor')
+            ->withCount('ordenes')
+            ->orderBy('ordenes_count', 'desc')
+            ->limit(3)
+            ->get(['id', 'name'])
+            ->map(function($u) { 
+                return ['name' => $u->name, 'entregadas_count' => $u->ordenes_count]; 
+            })
+            ->toArray();
+
+        return view('admin.admin_dashboard', [
+            'totalRestaurantes' => $totalRestaurantes,
+            'totalProductos' => $totalProductos,
+            'totalOrdenes' => $totalOrdenes,
+            'totalRepartidores' => $totalRepartidores,
+            'totalUsuarios' => $totalUsuarios,
+            'ventasTotal' => $ventasTotal,
+            'ordenesRecibidas' => $ordenesRecibidas,
+            'ordenesPreparando' => $ordenesPreparando,
+            'ordenesEntregadas' => $ordenesEntregadas,
+            'ordenesCanceladas' => $ordenesCanceladas,
+            'ordenesSinAsignar' => $ordenesSinAsignar,
+            'ordenesRestaurantes' => $ordenesRestaurantes,
+            'clientesCount' => $clientesCount,
+            'restaurantesCount' => $restaurantesCount,
+            'repartidoresCount' => $repartidoresCount,
+            'adminsCount' => $adminsCount,
+            'repartidoresActivos' => $repartidoresActivos,
+            'totalEntregas' => $totalEntregas,
+            'ordenesRecientes' => $ordenesRecientes,
+            'ultimosUsuarios' => $ultimosUsuarios,
+            'topRestaurantes' => $topRestaurantes,
+            'topRepartidores' => $topRepartidores,
+        ]);
+    }
 }

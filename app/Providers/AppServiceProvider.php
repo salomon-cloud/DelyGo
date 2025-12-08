@@ -7,11 +7,6 @@ use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
-    protected $listen = [
-    \App\Events\EstadoOrdenCambio::class => [
-        \App\Listeners\NotificarClienteEstadoOrden::class,
-    ],
-];
     /**
      * Register any application services.
      */
