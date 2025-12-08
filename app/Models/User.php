@@ -21,6 +21,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'rol',
     ];
 
     /**
@@ -38,11 +39,29 @@ class User extends Authenticatable
      *
      * @return array<string, string>
      */
-    protected function casts(): array
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string,string>
+     */
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+    ];
+
+    /**
+     * Relación con el restaurante (si el usuario es propietario de uno).
+     */
+    public function restaurante()
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->hasOne(Restaurante::class);
+    }
+
+    /**
+     * Relación con órdenes (si es repartidor, tiene muchas órdenes asignadas).
+     */
+    public function ordenes()
+    {
+        return $this->hasMany(Orden::class, 'repartidor_id');
     }
 }
