@@ -4,14 +4,14 @@ Una plataforma de delivery simplificada con multi-usuario (clientes, restaurante
 
 ## 📋 Características Principales
 
-✅ **Multi-usuario**: Clientes, restaurantes, repartidores, admin  
-✅ **Menús de restaurantes**: CRUD de productos por restaurante  
-✅ **Órdenes**: Estados (recibida → preparando → en_camino → entregada)  
-✅ **Asignación manual**: Admin asigna repartidores a órdenes  
-✅ **Tracking básico**: Clientes ven estado de su orden  
-✅ **Calificaciones**: 1-5 estrellas después de entregar  
-✅ **Notificaciones**: Observer pattern con logs (email en futuro)  
-✅ **Pagos**: Placeholder (integración futura con Stripe)  
+✅ **Multi-usuario**: Clientes, restaurantes, repartidores, admin
+✅ **Menús de restaurantes**: CRUD de productos por restaurante
+✅ **Órdenes**: Estados (recibida → preparando → en_camino → entregada)
+✅ **Asignación manual**: Admin asigna repartidores a órdenes
+✅ **Tracking básico**: Clientes ven estado de su orden
+✅ **Calificaciones**: 1-5 estrellas después de entregar
+✅ **Notificaciones**: Observer pattern con logs (email en futuro)
+✅ **Pagos**: Placeholder (integración futura con Stripe)
 
 ## 🏗️ Arquitectura & Patrones
 
@@ -32,6 +32,7 @@ Una plataforma de delivery simplificada con multi-usuario (clientes, restaurante
 ## 🚀 Instalación & Setup
 
 ### Requisitos previos
+
 - PHP 8.2+
 - Composer
 - MySQL 8.0+
@@ -40,26 +41,31 @@ Una plataforma de delivery simplificada con multi-usuario (clientes, restaurante
 ### Pasos de instalación
 
 1. **Clonar/descargar el proyecto**
+
 ```bash
 cd c:\xampp\htdocs\SISTEMA_2\DelyGo
 ```
 
 2. **Instalar dependencias PHP**
+
 ```bash
 composer install
 ```
 
 3. **Copiar archivo de configuración**
+
 ```bash
 copy .env.example .env
 ```
 
 4. **Generar clave de aplicación**
+
 ```bash
 php artisan key:generate
 ```
 
 5. **Configurar base de datos en `.env`**
+
 ```env
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
@@ -70,21 +76,25 @@ DB_PASSWORD=
 ```
 
 6. **Crear base de datos**
+
 ```bash
 mysql -u root -e "CREATE DATABASE delygo CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 ```
 
 7. **Ejecutar migraciones**
+
 ```bash
 php artisan migrate
 ```
 
 8. **Opcionalmente: Seeding con datos de prueba**
+
 ```bash
 php artisan db:seed
 ```
 
 9. **Generar assets (Tailwind, si es necesario)**
+
 ```bash
 npm install
 npm run build
@@ -92,16 +102,17 @@ npm run build
 
 ## 🔑 Usuarios de Prueba (después de seedear)
 
-| Rol | Email | Password |
-|-----|-------|----------|
-| Admin | admin@delygo.test | password |
+| Rol         | Email                  | Password |
+| ----------- | ---------------------- | -------- |
+| Admin       | admin@delygo.test      | password |
 | Restaurante | restaurant@delygo.test | password |
-| Cliente | client@delygo.test | password |
-| Repartidor | delivery@delygo.test | password |
+| Cliente     | client@delygo.test     | password |
+| Repartidor  | delivery@delygo.test   | password |
 
 ## 📖 Flujos Principales
 
 ### 1. Cliente crea orden
+
 ```
 /cliente/orden/create           (selecciona restaurante)
 /cliente/orden/create/{rest}    (ve productos, agrega al carrito)
@@ -111,12 +122,14 @@ POST /cliente/orden             (crea orden, paga)
 ```
 
 ### 2. Admin asigna repartidor
+
 ```
 /admin/asignacion               (ve todas las órdenes)
 [Modal] Crear/Asignar orden     (manual, elige repartidor + restaurante)
 ```
 
 ### 3. Repartidor entrega
+
 ```
 /repartidor/ordenes             (ve órdenes asignadas)
 /repartidor/ordenes/{orden}     (detalle, cambia estado a "entregada")
@@ -124,6 +137,7 @@ POST /cliente/orden             (crea orden, paga)
 ```
 
 ### 4. Restaurante prepara
+
 ```
 /restaurante/ordenes/pendientes (ve órdenes nuevas de su restaurante)
 /restaurante/productos          (CRUD de productos)
@@ -132,6 +146,7 @@ POST /cliente/orden             (crea orden, paga)
 ## 🔔 Notificaciones & Events
 
 **Sistema activado:**
+
 - Evento `EstadoOrdenCambio` se dispara al cambiar estado
 - Listener `NotificarClienteEstadoOrden` registra en logs
 - Configuración: `config/broadcasting.php` (driver: `log` en desarrollo)
@@ -141,13 +156,15 @@ POST /cliente/orden             (crea orden, paga)
 ## ⭐ Sistema de Calificaciones
 
 Después que una orden llega a estado `entregada`:
+
 1. Cliente ve formulario para calificar (1-5 estrellas + comentario)
-2. Se guarda en tabla `ratings` 
+2. Se guarda en tabla `ratings`
 3. Se calcula promedio en perfil del repartidor/restaurante
 
 ## 💳 Pagos (Placeholder)
 
 Rutas implementadas:
+
 - `GET /pago/checkout` - Página de resumen
 - `POST /pago/procesar` - Procesa pago (simulado, logs)
 - `GET /pago/confirmacion/{txn_id}` - Confirmación
@@ -157,6 +174,7 @@ Rutas implementadas:
 ## 🗄️ Estructura de BD
 
 Tablas principales:
+
 - `users` (clientes, restaurantes, repartidores, admin)
 - `restaurantes`
 - `productos`
@@ -220,17 +238,6 @@ resources/views/
 - CSRF tokens en todos los formularios
 - Validaciones de input (nullable, exists, in, etc.)
 
-## 🚀 Próximas Mejoras
-
-1. Integración real de pagos (Stripe)
-2. Notificaciones en tiempo real (Laravel Echo + Pusher)
-3. Geolocalización y mapa real (Google Maps API)
-4. Dashboard con analytics
-5. Promociones y cupones
-6. Calificaciones del restaurante
-7. Tests automatizados
-8. CI/CD con GitHub Actions
-
 ## 📚 Documentación Adicional
 
 - [Laravel Docs](https://laravel.com/docs)
@@ -243,6 +250,6 @@ MIT
 
 ---
 
-**Desarrollado por:** Equipo DelyGo  
-**Versión:** 1.0.0  
+**Desarrollado por:** Equipo DelyGo
+**Versión:** 1.0.0
 **Última actualización:** Diciembre 2025
