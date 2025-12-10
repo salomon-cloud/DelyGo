@@ -37,8 +37,19 @@ return new class extends Migration
                     $table->renameColumn('puntuacion', 'calificacion');
                 }
                 if (Schema::hasColumn('ratings', 'repartidor_id')) {
-                    $table->dropForeignIdFor(\App\Models\User::class, 'repartidor_id');
-                    $table->dropColumn('repartidor_id');
+                    // Intentar eliminar la constraint FK primero (si existe), luego la columna.
+                    try {
+                        $table->dropForeign(['repartidor_id']);
+                    } catch (\Exception $e) {
+                        // Algunos motores/estados pueden lanzar si no existe la FK; ignorar y continuar.
+                    }
+
+                    try {
+                        $table->dropColumn('repartidor_id');
+                    } catch (\Exception $e) {
+                        // Si por alguna razón no se puede eliminar la columna aquí, lanzar para visibilidad.
+                        throw $e;
+                    }
                 }
             });
         }

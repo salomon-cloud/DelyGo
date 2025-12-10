@@ -30,6 +30,26 @@ class ProductoController extends Controller
             'restaurante_id' => $restaurante->id,
         ]);
     }
+    /**
+     * Mostrar formulario para crear un nuevo producto.
+     */
+    public function create()
+    {
+        return view('restaurante.producto-create');
+    }
+
+    /**
+     * Muestra el formulario de edición de un producto.
+     */
+    public function edit(Producto $producto)
+    {
+        // Verificar que el producto pertenece al restaurante del usuario autenticado
+        if ($producto->restaurante_id !== auth()->user()->restaurante->id) {
+            abort(403);
+        }
+
+        return view('restaurante.producto-edit', ['producto' => $producto]);
+    }
 
     /**
      * Almacena un nuevo producto.
@@ -40,20 +60,23 @@ class ProductoController extends Controller
             'nombre' => 'required|string|max:255',
             'descripcion' => 'nullable|string',
             'precio' => 'required|numeric|min:0.01',
-            'disponible' => 'boolean',
+            'disponible' => 'sometimes|boolean',
         ]);
 
-        $restauranteId = auth()->user()->restaurante->id;
+        $restaurante = auth()->user()->restaurante;
+        if (!$restaurante) {
+            return redirect()->route('dashboard')->with('error', 'No estás vinculado a un restaurante.');
+        }
 
         Producto::create([
-            'restaurante_id' => $restauranteId,
+            'restaurante_id' => $restaurante->id,
             'nombre' => $request->nombre,
             'descripcion' => $request->descripcion,
             'precio' => $request->precio,
-            'disponible' => $request->disponible ?? true,
+            'disponible' => $request->has('disponible') ? 1 : 0,
         ]);
 
-        return redirect()->route('productos.index');
+        return redirect()->route('productos.index')->with('success', 'Producto creado correctamente.');
     }
 
     /**
@@ -65,17 +88,37 @@ class ProductoController extends Controller
         if ($producto->restaurante_id !== auth()->user()->restaurante->id) {
             abort(403);
         }
-
         $request->validate([
             'nombre' => 'required|string|max:255',
             'descripcion' => 'nullable|string',
             'precio' => 'required|numeric|min:0.01',
-            'disponible' => 'boolean',
+            'disponible' => 'sometimes|boolean',
         ]);
 
-        $producto->update($request->all());
+        $producto->update([
+            'nombre' => $request->nombre,
+            'descripcion' => $request->descripcion,
+            'precio' => $request->precio,
+            'disponible' => $request->has('disponible') ? 1 : 0,
+        ]);
 
-        return redirect()->route('productos.index');
+        return redirect()->route('productos.index')->with('success', 'Producto actualizado.');
+    }
+
+    /**
+     * Cambia la disponibilidad de un producto.
+     */
+    public function toggleDisponibilidad(Producto $producto)
+    {
+        // Verificar que el producto pertenece al restaurante del usuario autenticado
+        if ($producto->restaurante_id !== auth()->user()->restaurante->id) {
+            abort(403);
+        }
+
+        $producto->disponible = !$producto->disponible;
+        $producto->save();
+
+        return redirect()->back()->with('success', 'Disponibilidad actualizada.');
     }
 
     /**

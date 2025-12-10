@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Orden;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class RepartidorController extends Controller
 {
@@ -74,10 +75,29 @@ class RepartidorController extends Controller
         ]);
 
         try {
+            Log::info('RepartidorController.actualizarEstado - antes', ['orden_id' => $orden->id, 'estado_actual' => $orden->estado, 'nuevo_estado' => $request->nuevo_estado, 'user_id' => $repartidor->id]);
+
             $orden->transicionarA($request->nuevo_estado);
-            return response()->json(['success' => true, 'estado' => $orden->estado, 'message' => 'Estado actualizado.']);
+
+            // Asegurar que el modelo refleja la BD
+            $orden->refresh();
+
+            Log::info('RepartidorController.actualizarEstado - despues', ['orden_id' => $orden->id, 'estado_nuevo' => $orden->estado]);
+
+            // Si la petición espera JSON (AJAX), devolvemos JSON. Si viene desde un formulario normal, redirigimos.
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => true, 'estado' => $orden->estado, 'message' => 'Estado actualizado.']);
+            }
+
+            return redirect()->back()->with('success', 'Estado actualizado correctamente.');
         } catch (\InvalidArgumentException $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
+            Log::error('RepartidorController.actualizarEstado - error', ['orden_id' => $orden->id, 'message' => $e->getMessage()]);
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
+            }
+
+            return redirect()->back()->with('error', $e->getMessage());
         }
     }
 

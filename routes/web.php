@@ -47,6 +47,13 @@ Route::middleware('auth')->group(function () {
     
     // Dashboard Restaurante
     Route::get('/restaurante/dashboard', [\App\Http\Controllers\Restaurante\ProductoController::class, 'dashboardRestaurante'])->name('restaurante.dashboard');
+    // Rutas para gestión de productos del restaurante
+    Route::get('/restaurante/productos', [\App\Http\Controllers\Restaurante\ProductoController::class, 'index'])->name('productos.index');
+    Route::post('/restaurante/productos', [\App\Http\Controllers\Restaurante\ProductoController::class, 'store'])->name('productos.store');
+    Route::get('/restaurante/productos/{producto}/edit', [\App\Http\Controllers\Restaurante\ProductoController::class, 'edit'])->name('productos.edit');
+    Route::put('/restaurante/productos/{producto}', [\App\Http\Controllers\Restaurante\ProductoController::class, 'update'])->name('productos.update');
+    Route::delete('/restaurante/productos/{producto}', [\App\Http\Controllers\Restaurante\ProductoController::class, 'destroy'])->name('productos.destroy');
+    Route::patch('/restaurante/productos/{producto}/toggle', [\App\Http\Controllers\Restaurante\ProductoController::class, 'toggleDisponibilidad'])->name('productos.toggle');
 
     // ===== RUTAS ADMINISTRATIVAS =====
     Route::get('/admin/users', [\App\Http\Controllers\Admin\AdminController::class, 'usuarios'])->name('admin.users');
@@ -133,6 +140,10 @@ Route::middleware('auth')->group(function () {
     // Rutas para gestión de productos del restaurante
     Route::get('restaurante/productos', [\App\Http\Controllers\Restaurante\ProductoController::class, 'index'])->name('productos.index');
     Route::post('restaurante/productos', [\App\Http\Controllers\Restaurante\ProductoController::class, 'store'])->name('productos.store');
+    // Acceder por id redirige a edición (evita 404 cuando se visita /restaurante/productos/{id})
+    Route::get('restaurante/productos/{producto}', function (\App\Models\Producto $producto) {
+        return redirect()->route('productos.edit', $producto);
+    })->name('productos.show');
     Route::put('restaurante/productos/{producto}', [\App\Http\Controllers\Restaurante\ProductoController::class, 'update'])->name('productos.update');
     Route::delete('restaurante/productos/{producto}', [\App\Http\Controllers\Restaurante\ProductoController::class, 'destroy'])->name('productos.destroy');
 

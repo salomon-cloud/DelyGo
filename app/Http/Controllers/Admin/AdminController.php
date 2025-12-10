@@ -62,22 +62,21 @@ class AdminController extends Controller
             return response()->json(['success' => false, 'message' => 'El ID proporcionado no corresponde a un repartidor válido.'], 400);
         }
 
-        // 1. Asignar el repartidor
+        // 1. Asignar el repartidor y guardar PRIMERO
         $orden->repartidor_id = $repartidor->id;
-        // La orden debe estar en 'preparando' para poder ser asignada.
+        $orden->save(); // ✅ Guardar repartidor_id antes de transicionar
         
         // 2.  Cambio de estado automatizado (Patrón State)
         try {
             // Cuando se asigna el repartidor, la orden pasa inmediatamente a 'en_camino'.
             $orden->transicionarA('en_camino');
         } catch (\InvalidArgumentException $e) {
-            // Si la orden no estaba en el estado correcto, solo guardamos el repartidor y lanzamos una advertencia
-            $orden->save(); 
+            // Si la orden no estaba en el estado correcto, retornamos error
             return response()->json([
-                'success' => true, 
-                'message' => 'Repartidor asignado, pero la orden no pudo pasar a "en_camino" automáticamente.', 
+                'success' => false, 
+                'message' => 'La orden no puede transicionar a "en_camino" desde su estado actual. Error: ' . $e->getMessage(),
                 'repartidor_name' => $repartidor->name
-            ]);
+            ], 400);
         }
         
         // La llamada a transicionarA() ya incluye $orden->save() y dispara el Evento Observer.
@@ -197,6 +196,7 @@ class AdminController extends Controller
             // productos expected shape: [{id: integer, cantidad: integer}, ...]
             'productos.*.id' => 'required_with:productos|integer|exists:productos,id',
             'productos.*.cantidad' => 'required_with:productos|integer|min:1',
+            'asignar_ahora' => 'nullable|boolean', // ✅ Agregar validación para asignar_ahora
         ]);
 
         $asignarAhora = $data['asignar_ahora'] ?? false;
@@ -238,14 +238,15 @@ class AdminController extends Controller
                 $orden->productos()->attach($attach);
             }
         }
+        
         // Si piden asignar ahora, asignar y tratar de transicionar
         if ($asignarAhora && $repartidor) {
             $orden->repartidor_id = $repartidor->id;
+            $orden->save(); // ✅ Guardar repartidor_id ANTES de transicionar
             try {
                 $orden->transicionarA('en_camino');
             } catch (\InvalidArgumentException $e) {
                 // guardamos repartidor y devolvemos advertencia
-                $orden->save();
                 return response()->json(['success' => true, 'message' => 'Orden creada y repartidor asignado, pero no pudo pasar automáticamente a "en_camino".', 'orden_id' => $orden->id, 'orden' => $orden->toArray(), 'repartidor_name' => $repartidor->name]);
             }
 

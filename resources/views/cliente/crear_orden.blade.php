@@ -254,10 +254,26 @@
                 return { id: select.value, cantidad: parseInt(qty.value || '1', 10) };
             }).filter(p => p.id);
 
+            // Calcular total basado en productos seleccionados
+            let total = 0;
+            rows.forEach(row => {
+                const select = row.querySelector('select');
+                const qtyInput = row.querySelector('input[type="number"]');
+                const productId = parseInt(select.value);
+                const product = products.find(p => p.id === productId);
+                const qty = parseInt(qtyInput.value || '1', 10);
+                const price = product ? parseFloat(product.precio) : 0;
+                total += price * qty;
+            });
+
+            // Obtener restaurante_id del campo oculto
+            const restauranteIdInput = document.querySelector('input[name="restaurante_id"]');
+            const restaurante_id = restauranteIdInput ? restauranteIdInput.value : null;
+
             const body = {
+                restaurante_id: restaurante_id,
                 direccion_entrega: document.getElementById('direccion_entrega').value,
-                tipo_envio: document.getElementById('tipo_envio').value,
-                distancia: document.getElementById('distancia').value || null,
+                total: total,
                 productos: productos
             };
 
@@ -269,7 +285,12 @@
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                 },
                 body: JSON.stringify(body)
-            }).then(r => r.json())
+            }).then(r => {
+                if (!r.ok) {
+                    return r.json().then(err => Promise.reject(err));
+                }
+                return r.json();
+            })
             .then(data => {
                     if (data.orden_id) {
                         const text = 'Orden creada correctamente. ID: ' + data.orden_id;
@@ -282,6 +303,14 @@
                         }
                     // Optionally clear form
                     // document.getElementById('order-form').reset();
+                } else if (data.message) {
+                    const text = data.message;
+                    if (typeof showResultModal === 'function') showResultModal('Éxito', text, true);
+                    else {
+                        msg.classList.remove('hidden');
+                        msg.className = 'mt-4 p-3 bg-green-100 text-green-800 rounded';
+                        msg.innerText = text;
+                    }
                 } else if (data.error) {
                     const text = data.error || 'Error al crear la orden.';
                     if (typeof showResultModal === 'function') showResultModal('Error', text, false);
@@ -292,7 +321,7 @@
                         msg.innerText = text;
                     }
                 } else {
-                    const text = 'Respuesta inesperada.';
+                    const text = 'Respuesta inesperada: ' + JSON.stringify(data);
                     if (typeof showToast === 'function') showToast(text, 'info');
                     else {
                         msg.classList.remove('hidden');
@@ -301,14 +330,14 @@
                     }
                 }
             }).catch(err => {
-                const text = 'Error de red al enviar la orden.';
+                console.error('Error:', err);
+                const text = err.error || err.message || 'Error de red al enviar la orden.';
                 if (typeof showToast === 'function') showToast(text, 'error');
                 else {
                     msg.classList.remove('hidden');
                     msg.className = 'mt-4 p-3 bg-red-100 text-red-800 rounded';
                     msg.innerText = text;
                 }
-                console.error(err);
             });
         });
     })();
